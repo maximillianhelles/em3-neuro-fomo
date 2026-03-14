@@ -32,18 +32,18 @@ def get_stock_data(ticker_symbol):
 
     return mu_est, sigma_est
 
-snp_ticker = "^GSPC"
-mu, std = get_stock_data(snp_ticker)
-
-
 base_dir = os.path.dirname(os.path.abspath(__file__))
 yaml_path = os.path.join(base_dir, "../../config/params.yaml")
 
 with open(yaml_path,"r") as f:
     params = yaml.safe_load(f)
 
+
+ticker = params["gbm"]["ticker"]
+mu, std = get_stock_data(ticker)
+
 params["gbm"]["mu"] = round(float(mu),6)
-params["gbm"]["std"] = round(float(std),6)
+params["gbm"]["sigma"] = round(float(std),6)
 
 with open(yaml_path,"w") as f:
     yaml.dump(params, f)
