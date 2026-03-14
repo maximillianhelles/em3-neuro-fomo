@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>S&P 500 — Simulation</title>
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #111118;
+      --border:    #1e1e2e;
+      --text:      #e2e2e8;
+      --muted:     #4a4a5a;
+      --green:     #00d4a0;
+      --red:       #ff4d6a;
+      --accent:    #4f8eff;
+      --mono:      'IBM Plex Mono', monospace;
+      --sans:      'IBM Plex Sans', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      letter-spacing: 0.01em;
+      overflow: hidden;
+    }
+
+    /* ── layout ── */
+    .shell {
+      display: grid;
+      grid-template-rows: 48px 1fr 32px;
+      height: 100vh;
+    }
+
+    /* ── topbar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .ticker {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: 0.08em;
+    }
+
+    .ticker span {
+      color: var(--muted);
+      font-weight: 300;
+      font-size: 11px;
+      margin-left: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    .divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+    }
+
+    .price-display {
+      font-family: var(--mono);
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text);
+      transition: color 0.3s ease;
+    }
+
+    .price-display.up   { color: var(--green); }
+    .price-display.down { color: var(--red);   }
+
+    .change-display {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 400;
+      padding: 3px 8px;
+      border-radius: 3px;
+      transition: all 0.3s ease;
+    }
+
+    .change-display.up   { color: var(--green); background: rgba(0,212,160,0.08); }
+    .change-display.down { color: var(--red);   background: rgba(255,77,106,0.08); }
+
+    .meta {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
+    }
+
+    .meta-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .meta-value {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    /* ── chart area ── */
+    .chart-wrap {
+      position: relative;
+      background: var(--bg);
+    }
+
+    #chart {
+      width: 100%;
+      height: 100%;
+    }
+
+    .loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: var(--bg);
+      z-index: 10;
+      transition: opacity 0.4s ease;
+    }
+
+    .loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-text {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .loading-bar {
+      width: 120px;
+      height: 1px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
+    .loading-bar::after {
+      content: '';
+      display: block;
+      width: 40%;
+      height: 100%;
+      background: var(--accent);
+      animation: slide 1s ease-in-out infinite;
+    }
+
+    @keyframes slide {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+
+    /* ── statusbar ── */
+    .statusbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 24px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+    }
+
+    .statusbar .dot { color: var(--green); }
+    .statusbar .right { margin-left: auto; }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- topbar -->
+  <header class="topbar">
+    <div class="ticker">^GSPC <span>S&amp;P 500 SIMULATION</span></div>
+    <div class="divider"></div>
+    <div class="price-display" id="price">—</div>
+    <div class="change-display" id="change">—</div>
+    <div class="meta">
+      <div class="meta-item">
+        <div class="meta-label">Open</div>
+        <div class="meta-value" id="open">—</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">High</div>
+        <div class="meta-value" id="high">—</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Low</div>
+        <div class="meta-value" id="low">—</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Bars</div>
+        <div class="meta-value" id="bars">—</div>
+      </div>
+      <div class="divider"></div>
+      <div class="status-dot"></div>
+    </div>
+  </header>
+
+  <!-- chart -->
+  <div class="chart-wrap">
+    <div class="loading" id="loading">
+      <div class="loading-text">Fetching simulation data</div>
+      <div class="loading-bar"></div>
+    </div>
+    <div id="chart"></div>
+  </div>
+
+  <!-- statusbar -->
+  <footer class="statusbar">
+    <span class="dot">●</span>
+    <span>GBM SIMULATION</span>
+    <span>5-MIN BARS</span>
+    <span class="right" id="endpoint">http://localhost:8000/values</span>
+  </footer>
+
+</div>
+
+<script>
+  const ENDPOINT = "http://localhost:8000/values";
+  const INTERVAL_MS = 30; // ms between bars when animating
+
+  const chart = LightweightCharts.createChart(document.getElementById("chart"), {
+    layout: {
+      background: { color: "#0a0a0f" },
+      textColor:  "#4a4a5a",
+      fontFamily: "'IBM Plex Mono', monospace",
+      fontSize:   11,
+    },
+    grid: {
+      vertLines: { color: "#1e1e2e", style: 1 },
+      horzLines: { color: "#1e1e2e", style: 1 },
+    },
+    crosshair: {
+      vertLine: { color: "#4f8eff", width: 1, style: 2, labelBackgroundColor: "#4f8eff" },
+      horzLine: { color: "#4f8eff", width: 1, style: 2, labelBackgroundColor: "#4f8eff" },
+    },
+    rightPriceScale: {
+      borderColor: "#1e1e2e",
+      scaleMargins: { top: 0.1, bottom: 0.1 },
+    },
+    timeScale: {
+      borderColor: "#1e1e2e",
+      timeVisible: true,
+    },
+    handleScroll: true,
+    handleScale:  true,
+  });
+
+  const series = chart.addLineSeries({
+    color:       "#4f8eff",
+    lineWidth:   1.5,
+    crosshairMarkerVisible: true,
+    crosshairMarkerRadius:  4,
+    crosshairMarkerBackgroundColor: "#4f8eff",
+    lastValueVisible: true,
+    priceLineVisible: true,
+    priceLineColor:   "#4f8eff",
+    priceLineWidth:   1,
+    priceLineStyle:   2,
+  });
+
+  // resize observer
+  new ResizeObserver(() => {
+    const wrap = document.querySelector(".chart-wrap");
+    chart.resize(wrap.clientWidth, wrap.clientHeight);
+  }).observe(document.querySelector(".chart-wrap"));
+
+  function updateHeader(values, upTo) {
+    const slice  = values.slice(0, upTo + 1);
+    const last   = slice[slice.length - 1];
+    const open   = slice[0];
+    const high   = Math.max(...slice);
+    const low    = Math.min(...slice);
+    const change = ((last - open) / open) * 100;
+    const up     = last >= open;
+
+    const priceEl  = document.getElementById("price");
+    const changeEl = document.getElementById("change");
+
+    priceEl.textContent  = last.toFixed(2);
+    changeEl.textContent = `${up ? "+" : ""}${change.toFixed(2)}%`;
+
+    priceEl.className  = "price-display "  + (up ? "up" : "down");
+    changeEl.className = "change-display " + (up ? "up" : "down");
+
+    document.getElementById("open").textContent = open.toFixed(2);
+    document.getElementById("high").textContent = high.toFixed(2);
+    document.getElementById("low").textContent  = low.toFixed(2);
+    document.getElementById("bars").textContent = upTo + 1;
+  }
+
+  async function run() {
+    const res    = await fetch(ENDPOINT);
+    const values = await res.json();
+
+    // hide loading
+    document.getElementById("loading").classList.add("hidden");
+
+    // build time series — treat each bar as 5 minutes apart from a base time
+    const baseTime = Math.floor(Date.now() / 1000) - values.length * 300;
+    const allData  = values.map((v, i) => ({ time: baseTime + i * 300, value: v }));
+
+    // animate bar by bar
+    let i = 0;
+    function step() {
+      if (i >= allData.length) return;
+      series.update(allData[i]);
+      updateHeader(values, i);
+      i++;
+      setTimeout(step, INTERVAL_MS);
+    }
+    step();
+  }
+
+  run().catch(err => {
+    document.querySelector(".loading-text").textContent = "Failed to connect to server";
+    console.error(err);
+  });
+</script>
+</body>
+</html>
