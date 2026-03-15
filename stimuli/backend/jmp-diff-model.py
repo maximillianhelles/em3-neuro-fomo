@@ -9,9 +9,9 @@ with open(params_path, "r") as f:
     params = yaml.safe_load(f)
 
 def get_prices(
-        init_value=params["gbm"]["init_value"], drift=params["gbm"]["mu"], 
-        volatility=params["gbm"]["sigma"], periods=params["gbm"]["periods"],
-        jump=params["gbm"]["mu_jump"], std_jump=params["gbm"]["sigma_jump"],
+        init_value=params["jump_gbm"]["init_value"], drift=params["jump_gbm"]["mu"], 
+        volatility=params["jump_gbm"]["sigma"], periods=params["jump_gbm"]["periods"],
+        jump=params["jump_gbm"]["mu_jump"], std_jump=params["jump_gbm"]["sigma_jump"],
         direction=1):
     
     # GBM calculation
