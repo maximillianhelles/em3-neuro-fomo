@@ -39,4 +39,4 @@ print(f"--- VALUES --- \n {test}")
 print(f"\n --- PERCENTAGE JUMP --- \n {round(jump*100, 2)}%")
 
 plt.plot(test)
-#plt.show()
+plt.show()
