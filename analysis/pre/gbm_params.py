@@ -32,7 +32,7 @@ yaml_path = os.path.join(base_dir, "../../config/params.yaml")
 with open(yaml_path,"r") as f:
     params = yaml.safe_load(f)
 
-ticker = params["gbm"]["ticker"]
+ticker = params["jump_gbm"]["ticker"]
 period = "7d"
 interval = "1m"
 df = (yf.download(ticker, period=period, interval=interval))["Close"]
@@ -43,13 +43,13 @@ if df.empty:
 
 mu_empirical, sigma_empirical = estimate_gbm_params(df)
 
-params["gbm"]["mu"] = round(float(mu_empirical),6)
-params["gbm"]["sigma"] = round(float(sigma_empirical),6)
+params["jump_gbm"]["mu"] = round(float(mu_empirical),6)
+params["jump_gbm"]["sigma"] = round(float(sigma_empirical),6)
 
 if interval == "1m":
-    params["gbm"]["periods"] = 60*8
+    params["jump_gbm"]["periods"] = 60*8
 elif interval == "5m":
-    params["gbm"]["periods"] = 12*8
+    params["jump_gbm"]["periods"] = 12*8
 
 with open(yaml_path,"w") as f:
     yaml.dump(params, f)
