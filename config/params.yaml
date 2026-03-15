@@ -2,8 +2,8 @@ gbm:
   init_value: 100
   lambda: null
   mu: -4.5e-05
-  mu_jump: null
-  periods: 288
+  mu_jump: 0.08
+  periods: 98
   sigma: 0.003283
-  sigma_jump: null
+  sigma_jump: 0.015
   ticker: BTC
