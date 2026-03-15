@@ -2,14 +2,16 @@ import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import os
 
-params_path = "../../config/params.yaml"
+base_dir = os.path.dirname(os.path.abspath(__file__))
+yaml_path = os.path.join(base_dir, "../../config/params.yaml")
 
-with open(params_path, "r") as f:
+with open(yaml_path, "r") as f:
     params = yaml.safe_load(f)
 
-def get_prices(
-        init_value=params["jump_gbm"]["init_value"], drift=params["jump_gbm"]["mu"], 
+def calc_jdm_values(
+        init_value=100, drift=params["jump_gbm"]["mu"], 
         volatility=params["jump_gbm"]["sigma"], periods=params["jump_gbm"]["periods"],
         jump=params["jump_gbm"]["mu_jump"], std_jump=params["jump_gbm"]["sigma_jump"],
         direction=1):
@@ -32,7 +34,7 @@ def get_prices(
     post_values = value * np.exp(np.cumsum(remaining_shocks))
     total_values = pre_values + post_values.tolist()
 
-    return total_values, direction*pct_jump
+    return total_values, direction*pct_jump, jump_point
 
 # test, jump = get_prices()
 # print(f"--- VALUES --- \n {test}")
