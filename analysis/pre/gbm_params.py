@@ -24,6 +24,8 @@ def estimate_gbm_params(df):
 
     return mu_est, sigma_est
 
+######################################################################
+
 base_dir = os.path.dirname(os.path.abspath(__file__))
 yaml_path = os.path.join(base_dir, "../../config/params.yaml")
 
@@ -40,8 +42,6 @@ if df.empty:
     raise ValueError(f"No data returned for ticker: {ticker}. Double-check input parameters")
 
 mu_empirical, sigma_empirical = estimate_gbm_params(df)
-
-######################################################################
 
 params["gbm"]["mu"] = round(float(mu_empirical),6)
 params["gbm"]["sigma"] = round(float(sigma_empirical),6)
