@@ -19,8 +19,8 @@ def get_prices(
     gbm_values = init_value * np.exp(np.cumsum(shocks))
     gbm_values = np.insert(gbm_values, 0, init_value).tolist()
 
-    # Intraday jump
-    jump_point = random.randint(int(periods/10), periods - int(periods/10)) # ensures margin for start and end
+    # Intraday spike
+    jump_point = random.randint(int(periods/10), periods - int(periods/10)) # ensures 10% margin for start and end
     value = gbm_values[jump_point]
     pct_jump = np.random.normal(jump, std_jump)
     value *= 1+direction*pct_jump
@@ -38,5 +38,7 @@ def get_prices(
 # print(f"--- VALUES --- \n {test}")
 # print(f"\n --- PERCENTAGE JUMP --- \n {round(jump*100, 2)}%")
 
-# plt.plot(test)
+# plt.plot(test, label="Asset Price", color='blue')
+# plt.ylim(85, 115)
+# plt.axhline(y=params["jump_gbm"]["init_value"], color='gray', linestyle='--', alpha=0.5)
 # plt.show()
