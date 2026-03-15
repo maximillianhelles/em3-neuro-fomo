@@ -3,23 +3,15 @@ import numpy as np
 import yaml
 import os
 
-def get_stock_data(ticker_symbol):
-    df = (yf.download(ticker_symbol, period="60d", interval="5m"))["Close"]
-
-    if df.empty:
-        raise ValueError(f"No data returned for ticker: {ticker_symbol}. Double-check symbol")
-    
-    df["log_ret"] = np.log(df / df.shift(1))
-
-    grouped = df.groupby(df.index.date)
+def estimate_gbm_params(df):
+    log_rets = np.log(df / df.shift(1))
+    grouped = log_rets.groupby(log_rets.index.date)
 
     results = []
-    for date, day_df in grouped:
-        five_min_returns = day_df["log_ret"].dropna()
-        if len(five_min_returns) < 78:
-            continue
-        mean = five_min_returns.mean()
-        sigma = five_min_returns.std()
+    for date, day_rets in grouped:
+        rets = day_rets.dropna()
+        mean = rets.mean()
+        sigma = rets.std()
 
         results.append({
             "date": date,
@@ -38,12 +30,26 @@ yaml_path = os.path.join(base_dir, "../../config/params.yaml")
 with open(yaml_path,"r") as f:
     params = yaml.safe_load(f)
 
-
 ticker = params["gbm"]["ticker"]
-mu, std = get_stock_data(ticker)
+period = "7d"
+interval = "1m"
+df = (yf.download(ticker, period=period, interval=interval))["Close"]
+df = df.squeeze()
 
-params["gbm"]["mu"] = round(float(mu),6)
-params["gbm"]["sigma"] = round(float(std),6)
+if df.empty:
+    raise ValueError(f"No data returned for ticker: {ticker}. Double-check input parameters")
+
+mu_empirical, sigma_empirical = estimate_gbm_params(df)
+
+######################################################################
+
+params["gbm"]["mu"] = round(float(mu_empirical),6)
+params["gbm"]["sigma"] = round(float(sigma_empirical),6)
+
+if interval == "1m":
+    params["gbm"]["periods"] = 60*8
+elif interval == "5m":
+    params["gbm"]["periods"] = 12*8
 
 with open(yaml_path,"w") as f:
     yaml.dump(params, f)
