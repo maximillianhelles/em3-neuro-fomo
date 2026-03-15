@@ -7,7 +7,7 @@ This study's objective is to investigate Event-Related Potentials (ERPs) associa
 ### Experimental Setup & Environment
 * **Recording:** A (num-of-electrodes) EEG-headset.
 * **Faraday Cage:** Experiments were conducted within the Faraday Cage to minimize external electromagnetic noise.
-* **Stimulus Display:** A continous line chart mimicking the price fluctuations of a fictional financial asset. 
+* **Stimulus Display:** A continous line chart mimicking the price fluctuations of a fictional financial asset set with a fixed y-axis ([80:115]) to stablize the signal-to-noise ratio.
 
 ### The Stimulus
 * **Base Action:** The base fluctations of the asset was determined by Geometric Brownian Motion, using parameters based on the S&P-500 index. Visit *stimuli/backend/jmp-diff-model.py* for stimuli implementation, *analysis/pre/gbm_params.py* for the logic behind the estimation of parameters, and *config/params.yaml* for actual parameters.
@@ -21,4 +21,22 @@ The experiment were divided into three seperate blocks:
 * **Block 2 - DKK 50:** Given 50 DKK capital pr. trial.
 * **Block 3 - DKK 100:** Given 100 DKK capital pr. trial.
 
-Concluding the experiment, the participant would receive the initial capital plus any returns of a randomly selected trial in either block two or three. This, in addition to behavioral agency, will (hopefully) ensure the activation of the brain's mesolimbic pathaways. Due to the low amount of participants, the experiment was designed as a within-subject design. 
+Concluding the experiment, the participant would receive the initial capital plus any returns of a randomly selected trial in either block two or three. This, in addition to behavioral agency, will (hopefully) ensure the activation of the brain's mesolimbic pathaways. Due to the low amount of participants, the experiment was designed as a within-subject design.
+
+ ### Conditions
+In order to measure both actual financial impacts and counterfactual outcomes, conditions follows a 2x2 matrix:
+<div align="center">
+
+| | Invested | Not Invested |
+| :--- | :---: | :---: |
+| **Positive Spike** | Condition A: Gain | Condition B: Loss |
+| **Negative Spike** | Condition C: FOMO | Condition D: Relief |
+
+</div>
+
+
+### Neurological Markers
+The analysis will focus on the two primary ERPs known to be present in such tasks: 
+* **The P300 Wave:** A positive-going deflection occurring approximately 300–600ms post-stimulus, primarily distributed over the parietal scalp. In this study, the P300 serves as an index of salience and context updating. It is expected to scale with the "surprise" element of the Jump-Diffusion spikes. We hypothesize that P300 amplitudes will be significantly larger in high-stake blocks (DKK 100) compared to control blocks, reflecting the increased motivational relevance of the financial volatility.
+
+* **Feedback Related Negativity (FRN):** A negative-going component peaking between 200–350ms post-feedback, typically localized to the Anterior Cingulate Cortex (ACC). The FRN performs a "binary evaluation" of outcomes. In this design, we expect the FRN to be most pronounced in Condition B (Loss) and Condition C (FOMO), where the outcome is worse than the counterfactual alternative. The FRN tracks the "prediction error" of the market shock, signaling a negative deviation from the participant's expected utility.
