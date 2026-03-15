@@ -16,7 +16,7 @@ class TriggerCode:
     BLOCK_END           = 6
     POSITION_INVESTED   = 7
     POSITION_UNINVESTED = 8
-    SAM_RATING =          9
+    SAM_RATING          = 9
 
 class TriggerSender:
     def send(self, code):
