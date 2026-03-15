@@ -1,17 +1,22 @@
 import yaml
+import os
 
-yaml_path =  "../config/params.yaml"
+base_dir = os.path.dirname(os.path.abspath(__file__))
+yaml_path = os.path.join(base_dir, "../config/params.yaml")
 
 with open(yaml_path, "r") as f:
     params = yaml.safe_load(f)
 
 class TriggerCode:
-    BLOCK_START    = 1
-    TRIAL_START    = 2
-    SPIKE_POSITIVE = 3
-    SPIKE_NEGATIVE = 4
-    TRIAL_END      = 5
-    BLOCK_END      = 6
+    BLOCK_START         = 1
+    TRIAL_START         = 2
+    SPIKE_POSITIVE      = 3
+    SPIKE_NEGATIVE      = 4
+    TRIAL_END           = 5
+    BLOCK_END           = 6
+    POSITION_INVESTED   = 7
+    POSITION_UNINVESTED = 8
+    SAM_RATING =          9
 
 class TriggerSender:
     def send(self, code):
@@ -27,8 +32,7 @@ class ParallelPortTrigger(TriggerSender):
         pass
 
 def get_trigger_sender():
-    mode = params["experiment"]["trigger_mode"]  # "dummy" or "parallel"
-    
+    mode = params["experiment"]["trigger_mode"]  
     if mode == "dummy":
         return DummyTrigger()
     elif mode == "parallel":
