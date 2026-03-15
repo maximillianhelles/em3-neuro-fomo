@@ -1,12 +1,12 @@
 jump_gbm:
-  init_value: 100
   mu: -1.1e-05
-  mu_jump: 0.05
+  mu_jump: 0.06
   periods: 480
   sigma: 0.000571
   sigma_jump: 0.015
   ticker: ^GSPC  
 
-experiment:
-  mode: dummy
+exp:
+  trigger_mode: dummy
+  trials_per_condition: 10
   
