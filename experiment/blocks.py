@@ -23,7 +23,7 @@ def run_block(block_id):
     
     for trial in trials:
         trigger.send(TriggerCode.TRIAL_START)
-        # Position prompt logic via Psychopy - need to create in /stimuli/frontend using a class
+        # Position choice logic via Psychopy - need to create in /stimuli/frontend using a class
         position = "invested" if trial in ["A", "C"] else "uninvested"
         if position == "invested":
             trigger.send(TriggerCode.POSITION_INVESTED)
@@ -46,10 +46,23 @@ def run_block(block_id):
             # perhaps make class of exp in another stimuli/frontend as a baseline and then append to coordinate system ####
         # Show SAM-rating screen
         trigger.send(TriggerCode.SAM_RATING)
-        
+        # Compare performance of trial to what could have been
+
         # Log trial to CSV logic
 
         trigger.send(TriggerCode.TRIAL_END)
 
         # Show fixation cross in frontend
 
+
+##### TRIAL FLOW #####
+# 1. Choose between two masked options. Position randomized. First leads to invested in stock, second leads to cash position.
+# 2. After choice, let participant know of the consequence
+# 3. Run main trial (not to scale):
+# ┌─────────────────┬──────────────────────────┬──────────────────────────────┐
+# │                 │                          │                              │
+# │   GBM Chart     │  Your cash / Portfolio   │  What if Cash / Portfolio    │
+# │                 │                          │                              │
+# └─────────────────┴──────────────────────────┴──────────────────────────────┘
+# 4. SAM Rating 
+# 6. 10s fixation cross to reset
