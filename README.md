@@ -29,7 +29,7 @@ In order to measure both actual financial impacts and counterfactual outcomes, c
 
 | | Invested | Not Invested |
 | :--- | :---: | :---: |
-| **Positive Spike** | Condition A: Gain | Condition B: FOMO |
+| **Positive Spike** | Condition A: Gain | Condition C: FOMO |
 | **Negative Spike** | Condition B: Loss | Condition D: Relief |
 
 </div>
