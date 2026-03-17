@@ -1,5 +1,10 @@
 import yaml
 import os
+import serial
+try:
+    from psychopy import parallel, core
+except ImportError:
+    print("PsychoPy not found. Running in 'Dummy Mode'.")
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 yaml_path = os.path.join(base_dir, "../config/params.yaml")
@@ -27,9 +32,31 @@ class DummyTrigger(TriggerSender):
         print(f"[TTL] Trigger sent: {code}")
 
 class ParallelPortTrigger(TriggerSender):
+    def __init__(self):
+        try:
+            self.port = serial.Serial("COM4", 115200)
+            self.port_type = "serial"
+        except NotImplementedError:
+            self.port = parallel.ParallelPort(0x0378)
+            self.port_type = "parallel"
+        except:
+            self.port_type = None
+            print("[TTL] Warning: no port found — triggers will not be sent")
+        
+        print(f"[TTL] Port type: {self.port_type}")
+
     def send(self, code):
-        # real hardware code here
-        pass
+        if self.port_type == "parallel":
+            self.port.setData(code)
+            core.wait(0.020)
+            self.port.setData(0)
+        elif self.port_type == "serial":
+            self.port.write(code.to_bytes(1, "big"))
+        else:
+            print(f"[TTL] No port — trigger {code} not sent")
+        
+        print(f"[TTL] Trigger sent: {code}")
+
 
 def get_trigger_sender():
     mode = params["experiment"]["trigger_mode"]  
