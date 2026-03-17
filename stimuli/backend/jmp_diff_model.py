@@ -36,11 +36,11 @@ def calc_jdm_values(
 
     return total_values, direction*pct_jump, jump_point
 
-# test, jump = get_prices()
+# test, jump, jump_point = calc_jdm_values()
 # print(f"--- VALUES --- \n {test}")
 # print(f"\n --- PERCENTAGE JUMP --- \n {round(jump*100, 2)}%")
 
 # plt.plot(test, label="Asset Price", color='blue')
 # plt.ylim(85, 115)
-# plt.axhline(y=params["jump_gbm"]["init_value"], color='gray', linestyle='--', alpha=0.5)
+# plt.axhline(y=100, color='gray', linestyle='--', alpha=0.5)
 # plt.show()
