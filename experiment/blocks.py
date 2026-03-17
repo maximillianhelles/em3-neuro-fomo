@@ -35,15 +35,15 @@ def run_block(block_id):
             raise ValueError(f"{block_id} is an invalid block_id")
         capital = capital_map[block_id]
 
-        if trial in ["A", "B"]:
-            values, jump, jump_point = jdm(init_value=capital)
-        else:
-            values, jump, jump_point = jdm(init_value=capital, direction=-1)
-        #### Stream to frontend psychopy logic ####
-        if jump > 0:
-            trigger.send(TriggerCode.SPIKE_POSITIVE)
-        else:
-            trigger.send(TriggerCode.SPIKE_NEGATIVE)
+        values, jump, jump_point = jdm(init_value=capital) if trial in ["A", "B"] else jdm(init_value=capital, direction=-1)
+        for i in range(len(values)):
+            if i == jump_point:
+                if jump > 0:
+                    trigger.send(TriggerCode.SPIKE_POSITIVE)
+                else:
+                    trigger.send(TriggerCode.SPIKE_NEGATIVE)
+            #### Build chart in psychopy window
+            # perhaps make class of exp in another stimuli/frontend as a baseline and then append to coordinate system ####
         # Show SAM-rating screen
         trigger.send(TriggerCode.SAM_RATING)
         
