@@ -24,7 +24,7 @@ def run_block(block_id):
     for trial in trials:
         trigger.send(TriggerCode.TRIAL_START)
         # Position prompt logic via Psychopy - need to create in /stimuli/frontend using a class
-        position = "invested" if trial in ["A", "B"] else "uninvested"
+        position = "invested" if trial in ["A", "C"] else "uninvested"
         if position == "invested":
             trigger.send(TriggerCode.POSITION_INVESTED)
         else:
@@ -32,10 +32,13 @@ def run_block(block_id):
 
         capital_map = {0: 0, 1: 50, 2: 100}
         if block_id not in capital_map:
-            raise ValueError(f"Invalid block_id: {block_id}")
+            raise ValueError(f"{block_id} is an invalid block_id")
         capital = capital_map[block_id]
-            
-        values, jump, jump_point = jdm(init_value=capital)
+
+        if trial in ["A", "B"]:
+            values, jump, jump_point = jdm(init_value=capital)
+        else:
+            values, jump, jump_point = jdm(init_value=capital, direction=-1)
         #### Stream to frontend psychopy logic ####
         if jump > 0:
             trigger.send(TriggerCode.SPIKE_POSITIVE)
