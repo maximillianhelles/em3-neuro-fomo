@@ -11,7 +11,7 @@ class MainExpInterface:
             self.win = visual.Window(fullscr=True, color="black", units="norm")
             self.win_width, self.win_height = self.win.size
         else:
-            self.win_width, self.win_height = 800, 600 # Mid-screen = 0,0, x_left = -400
+            self.win_width, self.win_height = 800, 600 # Mid-screen = 0,0, x_left = -1
             self.win = visual.Window(size=[self.win_width, self.win_height], fullscr=False, color="black", units="norm")
 
         self.fixation_cross = visual.TextStim(text="+", win=self.win, color="white", height=0.2)
@@ -57,8 +57,8 @@ class MainExpInterface:
             line.vertices = vertices[:i]
             x_axis.draw()
             y_axis.draw()
-            line.draw()
             midline.draw()
+            line.draw()
             self.win.flip()
             core.wait(0.1)
 
