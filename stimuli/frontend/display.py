@@ -7,7 +7,7 @@ except ImportError:
     print("Psychopy not downloaded.")
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(base_dir, ".."))
+sys.path.append(os.path.join(base_dir, "..", ".."))
 
 from experiment.triggers import get_trigger_sender, TriggerCode
 
