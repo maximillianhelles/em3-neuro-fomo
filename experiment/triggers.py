@@ -59,7 +59,7 @@ class ParallelPortTrigger(TriggerSender):
 
 
 def get_trigger_sender():
-    mode = params["experiment"]["trigger_mode"]  
+    mode = params["exp"]["trigger_mode"]  
     if mode == "dummy":
         return DummyTrigger()
     elif mode == "parallel":
