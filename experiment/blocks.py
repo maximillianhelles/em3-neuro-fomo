@@ -8,6 +8,7 @@ sys.path.append(os.path.join(base_dir, ".."))
 
 from triggers import get_trigger_sender, TriggerCode
 from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm
+from stimuli.frontend.display import MainExpInterface
 
 yaml_path = os.path.join(base_dir, "../config/params.yaml")
 
@@ -21,6 +22,7 @@ def run_block(block_id):
 
     trigger = get_trigger_sender()
     
+    block = MainExpInterface()
     for trial in trials:
         trigger.send(TriggerCode.TRIAL_START)
         # Position choice logic via Psychopy - need to create in /stimuli/frontend using a class
@@ -36,14 +38,7 @@ def run_block(block_id):
         capital = capital_map[block_id]
 
         values, jump, jump_point = jdm(init_value=capital) if trial in ["A", "B"] else jdm(init_value=capital, direction=-1)
-        for i in range(len(values)):
-            if i == jump_point:
-                if jump > 0:
-                    trigger.send(TriggerCode.SPIKE_POSITIVE)
-                else:
-                    trigger.send(TriggerCode.SPIKE_NEGATIVE)
-            #### Build chart in psychopy window
-            # perhaps make class of exp in another stimuli/frontend as a baseline and then append to coordinate system ####
+        block.build_chart(values, position, jump, jump_point, trigger)
         # Show SAM-rating screen
         trigger.send(TriggerCode.SAM_RATING)
         # Compare performance of trial to what could have been
@@ -51,8 +46,7 @@ def run_block(block_id):
         # Log trial to CSV logic
 
         trigger.send(TriggerCode.TRIAL_END)
-
-        # Show fixation cross in frontend
+        block.fix_cross()
 
 
 ##### TRIAL FLOW #####
