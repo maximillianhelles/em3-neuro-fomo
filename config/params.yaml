@@ -1,12 +1,10 @@
-jump_gbm:
-  mu: -1.1e-05
+exp:
+  trials_per_condition: 10
+  trigger_mode: dummy
+jdm:
+  mu: -8.253517141218856e-06
   mu_jump: 0.06
   periods: 390
-  sigma: 0.000571
+  sigma: 0.0005219204711225392
   sigma_jump: 0.015
-  ticker: ^GSPC  
-
-exp:
-  trigger_mode: dummy
-  trials_per_condition: 10
-  
+  ticker: ^GSPC
