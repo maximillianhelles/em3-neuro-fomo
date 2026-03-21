@@ -4,9 +4,8 @@ import csv
 import os
 import pandas as pd
 
-def estimate_gbm_params(prices, timestamps):
-    s = pd.Series(prices, index=pd.to_datetime(timestamps))
-    log_rets = np.log(s / s.shift(1))
+def estimate_gbm_params(series):
+    log_rets = np.log(series / series.shift(1))
     grouped = log_rets.groupby(log_rets.index.date)
 
     results = []
@@ -27,16 +26,17 @@ def estimate_gbm_params(prices, timestamps):
     return mu_est, sigma_est
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(base_dir, "../../data/financial_data/sp500_1m.csv")
+data_path = os.path.join(base_dir, "../../data/financial_data/BTCUSD_1m_Binance.csv")
 yaml_path = os.path.join(base_dir, "../../config/params.yaml")
 
-with open(data_path, "r") as f:
-    snp_1m = list(csv.DictReader(f))
+df = pd.read_csv(
+    "../../data/financial_data/BTCUSD_1m_Binance.csv",
+    parse_dates=["Open time"],
+    index_col="Open time"
+)
 
-closes = [float(day["close"]) for day in snp_1m]
-timestamps = [day["datetime"] for day in snp_1m]
-
-mu, sigma = estimate_gbm_params(closes, timestamps)
+close = df["Close"]
+mu, sigma = estimate_gbm_params(close)
 
 with open(yaml_path,"r") as f:
     params = yaml.safe_load(f)
