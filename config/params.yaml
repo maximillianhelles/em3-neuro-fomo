@@ -1,7 +1,7 @@
 jump_gbm:
   mu: -1.1e-05
   mu_jump: 0.06
-  periods: 480
+  periods: 390
   sigma: 0.000571
   sigma_jump: 0.015
   ticker: ^GSPC  
