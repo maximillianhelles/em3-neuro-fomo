@@ -26,8 +26,6 @@ def estimate_gbm_params(prices, timestamps):
 
     return mu_est, sigma_est
 
-######################################################################
-
 base_dir = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(base_dir, "../../data/financial_data/sp500_1m.csv")
 yaml_path = os.path.join(base_dir, "../../config/params.yaml")
