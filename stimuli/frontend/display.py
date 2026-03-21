@@ -74,7 +74,7 @@ class MainExpInterface:
             
         return description_invested, portfolio, cash_description, cash
     
-    def build_chart(self, values, position, jump, jump_point, trigger):
+    def build_chart(self, values, position, jump, jump_point, trigger_type):
         # Chart Margins
         margins = {
             "left": -1 + 2*0.1,
@@ -87,7 +87,6 @@ class MainExpInterface:
         baseline = values[0]
         bottom_y, top_y = (baseline*0.85, baseline*1.15)
 
-        ys = np.interp(values, (bottom_y, top_y), (margins["bottom"], margins["up"]))
         y_mid_px = np.interp(baseline, (bottom_y, top_y), (margins["bottom"], margins["up"]))
 
         xs = np.linspace(margins["left"], margins["right"], len(values))
@@ -118,28 +117,32 @@ class MainExpInterface:
         y_bottom_text = visual.TextStim(win=self.win, text=str(int(round(bottom_y, 0))), 
                                      pos=(margins["left"]-0.05, margins["bottom"]), height=0.05, color=axis_colors)
         
-        for i in range(2, len(values)+1):
-            price_line.vertices = vertices[:i]
+        def _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, margins, values, index, position):
             x_axis.draw()
             y_axis.draw()
             y_top_text.draw()
             y_bottom_text.draw()
             midline.draw()
-            price_line.draw()
-            description_invested, portfolio, cash_description, cash = self.portfolio_display(values[0], values[i-1], margins, position)
+            if price_line is not None:
+                price_line.draw()
+            description_invested, portfolio, cash_description, cash = self.portfolio_display(values[0], values[index], margins, position)
             description_invested.draw()
             portfolio.draw()
             cash_description.draw()
             cash.draw()
+            self.win.flip()
+        
+        _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, None, margins, values, 0, position)
+        core.wait(5.0)
+        for i in range(2, len(values)+1):
+            price_line.vertices = vertices[:i]
+            _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, margins, values, i-1, position)
             if i == jump_point:
                 if jump > 0:
-                    trigger.send(TriggerCode.SPIKE_POSITIVE)
+                    trigger_type.send(TriggerCode.SPIKE_POSITIVE)
                 else:
-                    trigger.send(TriggerCode.SPIKE_NEGATIVE) 
-            self.win.flip()
-            core.wait(0.01)
-            
-        core.wait(10.0)
+                    trigger_type.send(TriggerCode.SPIKE_NEGATIVE)
+            core.wait(0.1)
 
 instance = MainExpInterface(fullscr=False)
 
