@@ -11,9 +11,9 @@ with open(yaml_path, "r") as f:
     params = yaml.safe_load(f)
 
 def calc_jdm_values(
-        init_value=100, drift=params["jump_gbm"]["mu"], 
-        volatility=params["jump_gbm"]["sigma"], periods=params["jump_gbm"]["periods"],
-        jump=params["jump_gbm"]["mu_jump"], std_jump=params["jump_gbm"]["sigma_jump"],
+        init_value=100, drift=params["jdm"]["mu"], 
+        volatility=params["jdm"]["sigma"]*2, periods=params["jdm"]["periods"],
+        jump=params["jdm"]["jdm"], std_jump=params["jdm"]["sigma_jump"],
         direction=1):
     
     # GBM calculation
