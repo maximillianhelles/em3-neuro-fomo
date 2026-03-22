@@ -12,8 +12,8 @@ with open(yaml_path, "r") as f:
 
 def calc_jdm_values(
         init_value=100, drift=params["jdm"]["mu"], 
-        volatility=params["jdm"]["sigma"]*2, periods=params["jdm"]["periods"],
-        jump=params["jdm"]["jdm"], std_jump=params["jdm"]["sigma_jump"],
+        volatility=params["jdm"]["sigma"], periods=params["jdm"]["periods"],
+        jump=params["jdm"]["mu_jump"], std_jump=params["jdm"]["sigma_jump"],
         direction=1):
     
     # GBM calculation
