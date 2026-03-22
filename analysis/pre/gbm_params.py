@@ -7,7 +7,6 @@ import pandas as pd
 def estimate_gbm_params(series):
     log_rets = np.log(series / series.shift(1))
     
-    # Drop any return where the time gap is more than 1 minute
     time_diff = series.index.to_series().diff().dt.total_seconds()
     log_rets = log_rets[time_diff == 60]
 
