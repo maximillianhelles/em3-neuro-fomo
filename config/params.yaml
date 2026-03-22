@@ -2,9 +2,9 @@ exp:
   trials_per_condition: 10
   trigger_mode: dummy
 jdm:
-  mu: -8.253517141218856e-06
-  mu_jump: 0.06
-  periods: 390
-  sigma: 0.0005219204711225392
+  mu: 1.031982063325633e-06
+  mu_jump: 0.08
+  periods: 1440
+  sigma: 0.0009216472100849788
   sigma_jump: 0.015
-  ticker: ^GSPC
+  data_set: "data/financial_data/BTCUSD_1m_2017-2025.csv"
