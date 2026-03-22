@@ -208,3 +208,6 @@ __marimo__/
 
 # Mac Desktop Services
 .DS_Store
+
+#Data
+Data/financial_data/
