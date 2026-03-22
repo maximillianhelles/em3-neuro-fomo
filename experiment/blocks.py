@@ -8,23 +8,22 @@ sys.path.append(os.path.join(base_dir, ".."))
 
 from triggers import get_trigger_sender, TriggerCode
 from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm
-from stimuli.frontend.display import MainExpInterface
+from stimuli.frontend.display import ExpInterface
 
 yaml_path = os.path.join(base_dir, "../config/params.yaml")
 
 with open(yaml_path,"r") as f:
     params = yaml.safe_load(f)
 
-def run_block(block_id):
+def run_block(block_id, fullscr=False):
     conds = ["A","B","C","D"]
     trials = conds * params["exp"]["trials_per_condition"]
     random.shuffle(trials)
 
     trigger = get_trigger_sender()
-    
-    block = MainExpInterface()
+    trigger.send(TriggerCode.BLOCK_START)
+    block = ExpInterface(fullscr)
     for trial in trials:
-        trigger.send(TriggerCode.TRIAL_START)
         # Position choice logic via Psychopy - need to create in /stimuli/frontend using a class
         position = "invested" if trial in ["A", "C"] else "uninvested"
         if position == "invested":
@@ -32,23 +31,25 @@ def run_block(block_id):
         else:
             trigger.send(TriggerCode.POSITION_UNINVESTED)
 
-        capital_map = {0: 0, 1: 50, 2: 100}
+        capital_map = {"control": 0, "block1": 50, "block2": 100}
         if block_id not in capital_map:
             raise ValueError(f"{block_id} is an invalid block_id")
         capital = capital_map[block_id]
 
         values, jump, jump_point = jdm(init_value=capital) if trial in ["A", "B"] else jdm(init_value=capital, direction=-1)
+        trigger.send(TriggerCode.TRIAL_START)
         block.build_chart(values, position, jump, jump_point, trigger)
         # Show SAM-rating screen
         trigger.send(TriggerCode.SAM_RATING)
-        # Compare performance of trial to what could have been
 
         # Log trial to CSV logic
 
         trigger.send(TriggerCode.TRIAL_END)
         block.fix_cross()
+    
+    trigger.send(TriggerCode.BLOCK_END)
 
-
+run_block("block2")
 ##### TRIAL FLOW #####
 # 1. Choose between two masked options. Position randomized. First leads to invested in stock, second leads to cash position.
 # 2. After choice, let participant know of the consequence
