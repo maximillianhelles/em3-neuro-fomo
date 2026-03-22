@@ -31,8 +31,13 @@ def estimate_gbm_params(series):
 base_dir = os.path.dirname(os.path.abspath(__file__))
 yaml_path = os.path.join(base_dir, "../../config/params.yaml")
 
+with open(yaml_path,"r") as f:
+    params = yaml.safe_load(f)
+
+data_set = params["jdm"]["data_set"]
+
 df = pd.read_csv(
-    "../../data/financial_data/BTCUSD_1m_2017-2025.csv",
+    f"../../{data_set}",
     parse_dates=["Open time"],
     index_col="Open time"
 )
