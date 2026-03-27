@@ -9,16 +9,15 @@ sys.path.append(os.path.join(base_dir, ".."))
 
 from triggers import get_trigger_sender, TriggerCode
 from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm
-from stimuli.frontend.display import ExpInterface
 
 config_path = os.path.join(base_dir, "../config/params.yaml")
 
 with open(config_path,"r") as f:
     params = yaml.safe_load(f)
 
-def run_block(subject_id, block_id, fullscr=False):
+def run_block(interface, subject_id, block_id):
     # Determine intial capital
-    capital_map = {"control": 0, "low": 50, "high": 100}
+    capital_map = {"control": 1, "low": 50, "high": 100}
     if block_id not in capital_map:
         raise ValueError(f"{block_id} is an invalid block_id")
     capital = capital_map[block_id]
@@ -43,7 +42,6 @@ def run_block(subject_id, block_id, fullscr=False):
     trial_nums = range(1, len(all_trials)+1)
 
     trigger = get_trigger_sender()
-    block = ExpInterface(fullscr)
     trigger.send(TriggerCode.BLOCK_START)
 
     for trial, ticker, direction, trial_num in zip(trials, tickers, directions, trial_nums):
@@ -53,15 +51,16 @@ def run_block(subject_id, block_id, fullscr=False):
             trigger.send(TriggerCode.CASH)
 
         # Trial information becomes visible to participant
-        block.position_disclosure(trial, capital, ticker)
+        interface.position_disclosure(trial, capital, ticker)
 
         # Trial begins
         values, jump, jump_point = jdm(init_value=capital, direction=direction)
         trigger.send(TriggerCode.TRIAL_START)
-        action_taken, action_value = block.chart_phase(values, trial, jump, jump_point, trigger)
+        action_taken, action_value = interface.chart_phase(values, trial, jump, jump_point, trigger)
+
         # SAM-rating
         trigger.send(TriggerCode.SAM_RATING)
-        responses = block.sam_rating()
+        responses = interface.sam_rating()
 
         # Append to behavioral data to CSV
         with open(csv_path, "a", newline="") as f:
@@ -74,6 +73,7 @@ def run_block(subject_id, block_id, fullscr=False):
                 "position": trial,
                 "direction": direction,
                 "chart_values": [round(v, 4) for v in values],
+                "jump_pct": jump,
                 "action_taken": action_taken,
                 "action_value": action_value,
                 "final_value": values[-1],
@@ -84,6 +84,7 @@ def run_block(subject_id, block_id, fullscr=False):
 
         # Fix Cross
         trigger.send(TriggerCode.TRIAL_END)
-        block.fix_cross()
+        interface.fix_cross()
     
     trigger.send(TriggerCode.BLOCK_END)
+    print(f"{subject_id} has succesfully completed block: {block_id}")
