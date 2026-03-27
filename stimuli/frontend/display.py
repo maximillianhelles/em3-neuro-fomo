@@ -1,8 +1,9 @@
 import numpy as np
 import os
 import sys
+import yaml
 try:
-    from psychopy import core, visual
+    from psychopy import core, visual, event
 except ImportError:
     print("Psychopy not downloaded.")
 
@@ -10,7 +11,11 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir, ".."))
 
 from experiment.triggers import get_trigger_sender, TriggerCode
-#from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm
+
+config_path = os.path.join(base_dir, "../../config/params.yaml") 
+
+with open(config_path, "r") as f:
+     params = yaml.safe_load(f)
 
 class ExpInterface:
     def __init__(self, fullscr=False):
@@ -31,6 +36,23 @@ class ExpInterface:
         self.win.flip()
         core.wait(duration)
 
+    def informing(self, position, capital, ticker):
+        if position == "Asset":
+            description = visual.TextStim(win=self.win, text=(
+                                            f"You own {capital} DKK of this ASSET: {ticker}. \n"
+                                            f"To sell it at any given time, press [{params['exp']['sell_key']}]\n"
+                                            f"To proceed, press Enter"
+                                            ), pos=(0, 0), color="#FFFFFF")
+        else:
+            description = visual.TextStim(win=self.win, text=(
+                                            f"You have {capital} DKK in CASH. \n"
+                                            f"To buy the asset {ticker} at any given time, press {params['exp']['buy_key']}\n"
+                                            f"To proceed, press Enter"
+                                            ), pos=(0, 0), color="#FFFFFF")
+        description.draw()
+        self.win.flip()
+        event.waitKeys(60.0, keyList=["return"])
+            
     def portfolio_display(self, init_value, value, margins, position):
         left_x = margins["left"]+0.3
         right_x = margins["right"] - 0.3
