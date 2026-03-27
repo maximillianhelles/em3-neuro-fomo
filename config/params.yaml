@@ -1,8 +1,8 @@
 exp:
-  trials_per_condition: 20
+  trials_per_condition: 10
   trigger_mode: dummy
-  sell_key: s
-  buy_key: b
+  sell_key: S
+  buy_key: B
   iti_duration: 5.0
   tickers:
   - AXVQ
