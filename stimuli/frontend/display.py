@@ -1,16 +1,21 @@
 import numpy as np
 import os
 import sys
+import yaml
 try:
-    from psychopy import core, visual
+    from psychopy import core, visual, event
 except ImportError:
     print("Psychopy not downloaded.")
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir, ".."))
 
-from experiment.triggers import get_trigger_sender, TriggerCode
-#from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm
+from experiment.triggers import TriggerCode
+
+config_path = os.path.join(base_dir, "../../config/params.yaml") 
+
+with open(config_path, "r") as f:
+     params = yaml.safe_load(f)
 
 class ExpInterface:
     def __init__(self, fullscr=False):
@@ -26,53 +31,29 @@ class ExpInterface:
 
         self.default_color = "#3a3f43"
 
-    def fix_cross(self, duration=10.0):
+    def fix_cross(self, duration=params["exp"]["iti_duration"]):
         self.fixation_cross.draw()
         self.win.flip()
         core.wait(duration)
 
-    def portfolio_display(self, init_value, value, margins, position):
-        left_x = margins["left"]+0.3
-        right_x = margins["right"] - 0.3
-        text_offset_y = margins["bottom"]-0.2
-        num_offset_y = margins["bottom"]-0.3
-
-        if value > round(init_value, 2):
-                num_color = "green"
-        elif value < round(init_value, 2):
-                num_color = "red"
+    def position_disclosure(self, position, capital, ticker):
+        if position == "ASSET":
+            description = visual.TextStim(win=self.win, text=(
+                                            f"You own {capital} DKK of this asset: {ticker} \n \n"
+                                            f"To sell it at any given time, press [{params['exp']['sell_key']}]\n \n"
+                                            f"To proceed, press Enter"
+                                            ), pos=(0, 0), color="#FFFFFF")
         else:
-                num_color = self.default_color 
-
-        if position == "invested":
-            description_invested = visual.TextStim(win=self.win, text="Your Investment Value:", 
-                                            pos=(left_x, text_offset_y), color="#FFFFFF")
-
-            portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)), 
-                                            pos=(left_x, num_offset_y), color=num_color)
-            
-            cash_description = visual.TextStim(win=self.win, text="What if: Cash Value", 
-                                   pos=(right_x, text_offset_y), color="#FFFFFF")
-            
-            cash = visual.TextStim(win=self.win, text=str(init_value), 
-                                   pos=(right_x, num_offset_y), color=self.default_color)
-            
-        else:
-            cash_description = visual.TextStim(win=self.win, text="Your Cash Value", 
-                                   pos=(left_x, text_offset_y), color="#FFFFFF")
-            
-            cash = visual.TextStim(win=self.win, text=str(init_value), 
-                                   pos=(left_x, num_offset_y), color=self.default_color)
-            
-            description_invested = visual.TextStim(win=self.win, text="What if: Investment Value", 
-                                            pos=(right_x, text_offset_y), color="#FFFFFF")
-            
-            portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)), 
-                                            pos=(right_x, num_offset_y), color=num_color)
-            
-        return description_invested, portfolio, cash_description, cash
+            description = visual.TextStim(win=self.win, text=(
+                                            f"You have {capital} DKK in cash. \n \n"
+                                            f"To buy the asset {ticker} at any given time, press [{params['exp']['buy_key']}]\n \n"
+                                            f"To proceed, press Enter"
+                                            ), pos=(0, 0), color="#FFFFFF")
+        description.draw()
+        self.win.flip()
+        event.waitKeys(60.0, keyList=["return"])
     
-    def build_chart(self, values, position, jump, jump_point, trigger_type):
+    def chart_phase(self, values, position, jump, jump_point, trigger_type):
         # Chart Margins
         margins = {
             "left": -1 + 2*0.1,
@@ -105,7 +86,48 @@ class ExpInterface:
             half_range = max(center * 0.10, np.ptp(visible_values) * 0.6 + 1e-9)
             return center - half_range, center + half_range
 
-        def _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, margins, values, index, position):
+        def portfolio_display(self, init_value, value, margins, position):
+            left_x = margins["left"]+0.3
+            right_x = margins["right"] - 0.3
+            text_offset_y = margins["bottom"]-0.2
+            num_offset_y = margins["bottom"]-0.3
+
+            if value > round(init_value, 2):
+                    num_color = "green"
+            elif value < round(init_value, 2):
+                    num_color = "red"
+            else:
+                    num_color = self.default_color 
+
+            if position == "ASSET":
+                description_invested = visual.TextStim(win=self.win, text="Asset Value:", 
+                                                pos=(left_x, text_offset_y), color="#FFFFFF")
+
+                portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)), 
+                                                pos=(left_x, num_offset_y), color=num_color)
+                
+                cash_description = visual.TextStim(win=self.win, text="What if: Cash Value", 
+                                    pos=(right_x, text_offset_y), color="#FFFFFF")
+                
+                cash = visual.TextStim(win=self.win, text=str(round(init_value,2)), 
+                                    pos=(right_x, num_offset_y), color=self.default_color)
+                
+            else:
+                cash_description = visual.TextStim(win=self.win, text="Cash Value", 
+                                    pos=(left_x, text_offset_y), color="#FFFFFF")
+                
+                cash = visual.TextStim(win=self.win, text=str(round(init_value,2)), 
+                                    pos=(left_x, num_offset_y), color=self.default_color)
+                
+                description_invested = visual.TextStim(win=self.win, text="What if: Asset Value", 
+                                                pos=(right_x, text_offset_y), color="#FFFFFF")
+                
+                portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)), 
+                                                pos=(right_x, num_offset_y), color=num_color)
+                
+            return description_invested, portfolio, cash_description, cash
+
+        def _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, margins, values, index, position, display_base):
             visible = values[:index] if index > 0 else values[:1]
             bottom_y, top_y = _recompute_scale(visible)
 
@@ -125,20 +147,65 @@ class ExpInterface:
             if price_line is not None and index > 0:
                 price_line.vertices = list(zip(xs[:index], ys_visible))
                 price_line.draw()
-            description_invested, portfolio, cash_description, cash = self.portfolio_display(values[0], values[index], margins, position)
+            description_invested, portfolio, cash_description, cash = portfolio_display(display_base, values[index], margins, position)
             description_invested.draw()
             portfolio.draw()
             cash_description.draw()
             cash.draw()
             self.win.flip()
 
-        _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, None, margins, values, 0, position)
+        
+        _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, None, margins, values, 0, position, values[0])
         core.wait(2.0)
+
+        action_taken = (False, None)
+        action_value = None
         for i in range(2, len(values)+1):
-            _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, margins, values, i-1, position)
-            if i == jump_point:
+            display_base = action_value if action_taken else values[0]
+            _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, margins, values, i-1, position, display_base)
+
+            if i-1 == jump_point:
                 if jump > 0:
                     trigger_type.send(TriggerCode.SPIKE_POSITIVE)
                 else:
                     trigger_type.send(TriggerCode.SPIKE_NEGATIVE)
+
+            if position == "ASSET":
+                 key = event.getKeys(keyList=[params["exp"]["sell_key"]])
+                 if key and not action_taken:
+                      action_value = values[i-1]
+                      position = "CASH"
+                      action_taken = (True, i)
+                      trigger_type.send(TriggerCode.SELL_ACTION)
+                      
+            else:
+                key = event.getKeys(keyList=[params["exp"]["buy_key"]])
+                if key and not action_taken:
+                      action_value = values[i-1]
+                      position = "ASSET"
+                      action_taken = (True, i)
+                      trigger_type.send(TriggerCode.BUY_ACTION)
+
             core.wait(1.0) if i == len(values) else core.wait(0.01)
+        
+        return action_taken, action_value
+
+    def sam_rating(self):
+        prompts = [
+            ("valence", "On a scale from 1 to 9, how are you feeling about the trial? \n \n"
+                        "Press a key from 1-9, where 1 = very negative and 9 = very positive"),
+            ("arousal", "On a scale from 1 to 9, how emotionally intense was the trial? \n \n"
+                        "Press a key from 1-9, where 1 = very calm and 9 = very excited"),
+            ("regret",  "On a scale from 1 to 9, how much do you regret your decision? \n \n"
+                        "Press a key from 1-9, where 1 = no regret and 9 = extreme regret"),
+        ]
+
+        responses = {}
+        for label, prompt in prompts:
+            stim = visual.TextStim(win=self.win, text=prompt, pos=(0, 0), color="#FFFFFF")
+            stim.draw()
+            self.win.flip()
+            keys = event.waitKeys(keyList=["1","2","3","4","5","6","7","8","9"])
+            responses[label] = int(keys[0])
+        
+        return responses

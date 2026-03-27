@@ -1,10 +1,54 @@
 exp:
   trials_per_condition: 10
   trigger_mode: dummy
+  sell_key: s
+  buy_key: b
+  iti_duration: 5.0
+  tickers:
+  - AXVQ
+  - BLNT
+  - CRMW
+  - DVOX
+  - EWKZ
+  - FLTB
+  - GSPN
+  - HVRX
+  - ITKM
+  - JPLC
+  - KZND
+  - LBWT
+  - MNXQ
+  - NVBK
+  - OXWM
+  - PJLF
+  - QRTN
+  - RSTV
+  - SWKZ
+  - TXPN
+  - ULYB
+  - VMCQ
+  - WJNX
+  - XBLT
+  - YKVP
+  - ZRWM
+  - ACFN
+  - BDQT
+  - CLPX
+  - DMVW
+  - ENKB
+  - FQRZ
+  - GTWL
+  - HCNP
+  - IJVX
+  - JBMW
+  - KCRL
+  - LDQP
+  - MXTV
+  - NWBZ
 jdm:
   mu: 1.031982063325633e-06
-  mu_jump: 0.08
+  mu_jump: 0.09
   periods: 1440
   sigma: 0.0009216472100849788
-  sigma_jump: 0.015
+  sigma_jump: 0.01
   data_set: "data/financial_data/BTCUSD_1m_2017-2025.csv"
