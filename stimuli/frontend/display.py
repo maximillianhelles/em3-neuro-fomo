@@ -158,7 +158,7 @@ class ExpInterface:
         _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, None, margins, values, 0, position, values[0])
         core.wait(2.0)
 
-        action_taken = False
+        action_taken = (False, None)
         action_value = None
         for i in range(2, len(values)+1):
             display_base = action_value if action_taken else values[0]
@@ -175,7 +175,7 @@ class ExpInterface:
                  if key and not action_taken:
                       action_value = values[i-1]
                       position = "CASH"
-                      action_taken = True
+                      action_taken = (True, i)
                       trigger_type.send(TriggerCode.SELL_ACTION)
                       
             else:
@@ -183,10 +183,12 @@ class ExpInterface:
                 if key and not action_taken:
                       action_value = values[i-1]
                       position = "ASSET"
-                      action_taken = True
+                      action_taken = (True, i)
                       trigger_type.send(TriggerCode.BUY_ACTION)
 
             core.wait(1.0) if i == len(values) else core.wait(0.01)
+        
+        return action_taken, action_value
 
     def sam_rating(self):
         prompts = [
