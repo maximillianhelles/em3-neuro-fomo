@@ -22,8 +22,8 @@ class TriggerCode:
     SPIKE_NEGATIVE      = 7
     TRIAL_END           = 8
     BLOCK_END           = 9
-    POSITION_INVESTED   = 10
-    POSITION_UNINVESTED = 11
+    ASSET               = 10
+    CASH                = 11
     SAM_RATING          = 12
 
 class DummyTrigger():

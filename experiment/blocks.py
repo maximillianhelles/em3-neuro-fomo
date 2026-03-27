@@ -2,6 +2,7 @@ import os
 import random
 import yaml
 import sys
+import csv
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir, ".."))
@@ -33,9 +34,9 @@ def run_block(block_id, fullscr=False):
 
     for trial, ticker, direction in zip(trials,tickers, directions):
         if trial == "ASSET":
-            trigger.send(TriggerCode.POSITION_INVESTED)
+            trigger.send(TriggerCode.ASSET)
         else:
-            trigger.send(TriggerCode.POSITION_UNINVESTED)
+            trigger.send(TriggerCode.CASH)
 
         # Trial information becomes visible to participant
         block.position_disclosure(trial, capital, ticker)
@@ -44,10 +45,13 @@ def run_block(block_id, fullscr=False):
         values, jump, jump_point = jdm(init_value=capital, direction=direction)
         trigger.send(TriggerCode.TRIAL_START)
         block.chart_phase(values, trial, jump, jump_point, trigger)
-        # Show SAM-rating screen
+
+        # SAM-rating
         trigger.send(TriggerCode.SAM_RATING)
+        responses = block.sam_rating()
 
         # Log trial to CSV logic
+
 
         trigger.send(TriggerCode.TRIAL_END)
         block.fix_cross()
