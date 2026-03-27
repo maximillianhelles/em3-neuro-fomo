@@ -1,6 +1,6 @@
 # Experimental Methods 3: Neurological Responses to Controlled Financial Volatility and Counterfactual Regret
 
-For full transparency, this repository contains all files relevant to the author's project in Experimental Methods 3 and contains all necessary files to replicate it as well as the code used for data processing. Additionally, the associated paper and this README will offer insights, discussions, and conclusions in regards to flaws, validity, and future studies.
+For full transparency, this repository contains all files relevant to the author's project in Experimental Methods 3 and all necessary files to replicate it. Additionally, the associated paper will offer insights, discussions, and conclusions in regards to flaws, validity, and future studies.
 
 ## Objective
 
@@ -8,15 +8,15 @@ This study's objective is to investigate Event-Related Potentials (ERPs) associa
 
 ## Experimental Setup & Environment
 
-- **Recording:** A (num-of-electrodes) EEG-headset.
+- **Recording:** A 64-electrode EEG-headset.
 - **Faraday Cage:** Experiments were conducted within the Faraday Cage to minimize external electromagnetic noise.
-- **Stimulus Display:** A continuous line chart mimicking the price fluctuations of a fictional financial asset, displayed alongside real-time portfolio values for both the chosen position and its counterfactual alternative. The chart y-axis is fixed ([85:115]) to ensure that GBM noise remains visually subordinate to the experimentally induced volatility spikes.
+- **Stimulus Display:** A continuous line chart mimicking the price fluctuations of a fictional financial asset, displayed alongside real-time portfolio values for both the chosen position and its counterfactual alternative. 
 
 ## The Stimulus
 
-- **Base Action:** The base fluctuations of the asset were determined by Geometric Brownian Motion, using parameters empirically estimated from the S&P-500 index. Visit `stimuli/backend/jmp_diff_model.py` for stimulus implementation, `analysis/pre/gbm_params.py` for parameter estimation logic, and `config/params.yaml` for actual parameters.
-- **Spikes:** At randomized points within 10% and 90% of the trial duration, the model introduces sudden volatility in a direction predetermined by condition assignment, mimicking volatility spikes that frequently occur in real markets (e.g. following a company's earnings release).
-- **Behavioral Agency:** To induce genuine emotional investment while preserving experimental control, participants began each trial with a predetermined position — either holding an asset or holding cash — and were given the option to act on it during the trial. In asset trials, participants could elect to sell their holding at any point, forfeiting the right to re-enter. In cash trials, participants could elect to purchase the asset, after which the position was held until trial end, at which point its asset value was converted to cash. This design leverages the endowment effect and genuine decision-making agency to elicit loss aversion and counterfactual regret, while maintaining full experimental control over spike direction. The participant's buy/sell decision constitutes a behavioral variable that is analysed as a moderator of ERP responses.
+- **Base Action:** The base fluctuations of the asset were determined by Geometric Brownian Motiom (GBM), using parameters empirically estimated from the last 8 years of Bitcoin (BTC) Visit `stimuli/backend/jmp_diff_model.py` for graph calculation, `analysis/pre/gbm_params.py` for parameter estimation logic, and `config/params.yaml` for actual parameters.
+- **Spikes:** At randomized points within 10% and 90% of the trial duration, the model introduces sudden volatility in a predetermined direction, mimicking volatility spikes that frequently occur in real markets (e.g. positive/negative news). Combining GBM with these spikes result in a jump-diffusion model (jdm).
+- **Behavioral Agency:** To induce genuine emotional investment while preserving experimental control, participants began each trial with a predetermined position — either holding an asset or holding cash — and were given the option to act on it during the trial. In asset trials, participants could elect to sell their holding at any point, forfeiting the right to re-enter. In cash trials, participants could choose to purchase the asset, after which the position was held until trial end, at which point its asset value was converted to cash. This design leverages the endowment effect and genuine decision-making agency to elicit loss aversion and counterfactual regret, while maintaining full experimental control over spike direction. The participant's buy/sell decision constitutes a behavioral variable that is analysed as a moderator of ERP responses.
 - **Real-Time Counterfactual Display:** During each trial, participants could observe both their actual portfolio value and the value of the unchosen alternative updating in real time alongside the chart. This continuous counterfactual exposure was designed to strengthen the affective magnitude of FOMO and relief responses. Portfolio values were displayed in peripheral vision to minimize interference with spike-locked ERP components.
 - **Inter-Trial Recovery:** A 10-second fixation cross was presented between successive trials to allow for affective baseline restoration. This interval serves as a washout period, neutralizing the psychological impact of prior market shocks and preventing carryover effects between trials.
 
@@ -46,9 +46,9 @@ Spike direction was predetermined across trials (20 upward, 20 downward) and ran
 ## Trial Flow
 
 1. **Position disclosure** — participant is informed whether they hold the asset or cash for this trial
-2. **GBM trial** — chart runs with real-time portfolio values displayed for both actual and counterfactual positions; participant may buy or sell at any point; spike occurs at a randomized point
+2. **JDM trial** — chart runs with real-time portfolio values displayed for both actual and counterfactual positions; participant may buy or sell at any point; spike occurs at a randomized point within 10% and 90% of start and end, respectively.
 3. **SAM rating** — participant rates current valence and arousal using the Self-Assessment Manikin scale
-4. **Fixation cross** — 10-second inter-trial interval
+4. **Fixation cross** — 5-second inter-trial interval
 
 ## Neurological Markers
 
