@@ -31,13 +31,13 @@ class ExpInterface:
 
         self.default_color = "#3a3f43"
 
-    def fix_cross(self, duration=10.0):
+    def fix_cross(self, duration=params["exp"]["iti_duration"]):
         self.fixation_cross.draw()
         self.win.flip()
         core.wait(duration)
 
-    def informing(self, position, capital, ticker):
-        if position == "Asset":
+    def position_disclosure(self, position, capital, ticker):
+        if position == "ASSET":
             description = visual.TextStim(win=self.win, text=(
                                             f"You own {capital} DKK of this ASSET: {ticker}. \n"
                                             f"To sell it at any given time, press [{params['exp']['sell_key']}]\n"
@@ -66,8 +66,8 @@ class ExpInterface:
         else:
                 num_color = self.default_color 
 
-        if position == "invested":
-            description_invested = visual.TextStim(win=self.win, text="Your Investment Value:", 
+        if position == "ASSET":
+            description_invested = visual.TextStim(win=self.win, text="Asset Value:", 
                                             pos=(left_x, text_offset_y), color="#FFFFFF")
 
             portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)), 
@@ -80,13 +80,13 @@ class ExpInterface:
                                    pos=(right_x, num_offset_y), color=self.default_color)
             
         else:
-            cash_description = visual.TextStim(win=self.win, text="Your Cash Value", 
+            cash_description = visual.TextStim(win=self.win, text="Cash Value", 
                                    pos=(left_x, text_offset_y), color="#FFFFFF")
             
             cash = visual.TextStim(win=self.win, text=str(init_value), 
                                    pos=(left_x, num_offset_y), color=self.default_color)
             
-            description_invested = visual.TextStim(win=self.win, text="What if: Investment Value", 
+            description_invested = visual.TextStim(win=self.win, text="What if: Asset Value", 
                                             pos=(right_x, text_offset_y), color="#FFFFFF")
             
             portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)), 
@@ -94,7 +94,7 @@ class ExpInterface:
             
         return description_invested, portfolio, cash_description, cash
     
-    def build_chart(self, values, position, jump, jump_point, trigger_type):
+    def chart_phase(self, values, position, jump, jump_point, trigger_type):
         # Chart Margins
         margins = {
             "left": -1 + 2*0.1,
@@ -156,11 +156,29 @@ class ExpInterface:
 
         _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, None, margins, values, 0, position)
         core.wait(2.0)
+
+        action_taken = False
         for i in range(2, len(values)+1):
             _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, margins, values, i-1, position)
-            if i == jump_point:
+
+            if i-1 == jump_point:
                 if jump > 0:
                     trigger_type.send(TriggerCode.SPIKE_POSITIVE)
                 else:
                     trigger_type.send(TriggerCode.SPIKE_NEGATIVE)
+
+            if position == "ASSET":
+                 key = event.getKeys(keyList=[params["exp"]["sell_key"]])
+                 if key and not action_taken:
+                      position = "CASH"
+                      action_taken = True
+                      trigger_type.send(TriggerCode.SELL_ACTION)
+                      
+            else:
+                key = event.getKeys(keyList=[params["exp"]["buy_key"]])
+                if key and not action_taken:
+                      position = "ASSET"
+                      action_taken = True
+                      trigger_type.send(TriggerCode.BUY_ACTION)
+
             core.wait(1.0) if i == len(values) else core.wait(0.01)

@@ -14,24 +14,23 @@ with open(yaml_path, "r") as f:
 
 class TriggerCode:
     BLOCK_START         = 1
-    TRIAL_START         = 2
-    SPIKE_POSITIVE      = 3
-    SPIKE_NEGATIVE      = 4
-    TRIAL_END           = 5
-    BLOCK_END           = 6
-    POSITION_INVESTED   = 7
-    POSITION_UNINVESTED = 8
-    SAM_RATING          = 9
+    INFO_START          = 2
+    TRIAL_START         = 3
+    SELL_ACTION         = 4
+    BUY_ACTION          = 5
+    SPIKE_POSITIVE      = 6
+    SPIKE_NEGATIVE      = 7
+    TRIAL_END           = 8
+    BLOCK_END           = 9
+    POSITION_INVESTED   = 10
+    POSITION_UNINVESTED = 11
+    SAM_RATING          = 12
 
-class TriggerSender:
-    def send(self, code):
-        raise NotImplementedError
-
-class DummyTrigger(TriggerSender):
+class DummyTrigger():
     def send(self, code):
         print(f"[TTL] Trigger sent: {code}")
 
-class ParallelPortTrigger(TriggerSender):
+class ParallelPortTrigger():
     def __init__(self):
         try:
             self.port = serial.Serial("COM4", 115200)
