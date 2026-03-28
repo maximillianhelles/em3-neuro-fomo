@@ -17,6 +17,9 @@ config_path = os.path.join(base_dir, "../../config/params.yaml")
 with open(config_path, "r") as f:
      params = yaml.safe_load(f)
 
+class ExperimentAborted(Exception):
+    pass
+
 class ExpInterface:
     def __init__(self, fullscr=False):
         self.b_col = "#141E36"
@@ -51,7 +54,10 @@ class ExpInterface:
                                             ), pos=(0, 0), color="#FFFFFF")
         description.draw()
         self.win.flip()
-        event.waitKeys(60.0, keyList=["return"])
+        keys = event.waitKeys(keyList=["return", "escape"])
+        if "escape" in keys:
+            self.win.close()
+            raise ExperimentAborted("Experiment aborted by experimenter during position disclosure.")
     
     def chart_phase(self, values, position, jump, jump_point, trigger_type):
         # Chart Margins
@@ -170,17 +176,22 @@ class ExpInterface:
                 else:
                     trigger_type.send(TriggerCode.SPIKE_NEGATIVE)
 
+            escape = event.getKeys(keyList=["escape"])
+            if escape:
+                self.win.close()
+                raise ExperimentAborted("Experiment aborted by experimenter during chart phase.")
+
             if position == "ASSET":
                 key = event.getKeys(keyList=[params["exp"]["sell_key"]])
-                if key and not action_taken:
+                if key and not action_taken[0]:
                       action_value = values[i-1]
                       position = "CASH"
                       action_taken = (True, i)
                       trigger_type.send(TriggerCode.SELL_ACTION)
-                      
+
             else:
                 key = event.getKeys(keyList=[params["exp"]["buy_key"]])
-                if key and not action_taken:
+                if key and not action_taken[0]:
                       action_value = values[i-1]
                       position = "ASSET"
                       action_taken = (True, i)
@@ -205,7 +216,10 @@ class ExpInterface:
             stim = visual.TextStim(win=self.win, text=prompt, pos=(0, 0), color="#FFFFFF")
             stim.draw()
             self.win.flip()
-            keys = event.waitKeys(keyList=["1","2","3","4","5","6","7","8","9"])
+            keys = event.waitKeys(keyList=["1","2","3","4","5","6","7","8","9","escape"])
+            if "escape" in keys:
+                self.win.close()
+                raise ExperimentAborted("Experiment aborted by experimenter during SAM rating.")
             responses[label] = int(keys[0])
         
         return responses
