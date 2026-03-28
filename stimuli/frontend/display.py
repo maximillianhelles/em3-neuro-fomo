@@ -86,7 +86,7 @@ class ExpInterface:
             half_range = max(center * 0.10, np.ptp(visible_values) * 0.6 + 1e-9)
             return center - half_range, center + half_range
 
-        def portfolio_display(self, init_value, value, margins, position):
+        def portfolio_display(init_value, value, margins, position):
             left_x = margins["left"]+0.3
             right_x = margins["right"] - 0.3
             text_offset_y = margins["bottom"]-0.2
@@ -161,7 +161,7 @@ class ExpInterface:
         action_taken = (False, None)
         action_value = None
         for i in range(2, len(values)+1):
-            display_base = action_value if action_taken else values[0]
+            display_base = action_value if action_taken[0] else values[0]
             _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, margins, values, i-1, position, display_base)
 
             if i-1 == jump_point:
@@ -171,8 +171,8 @@ class ExpInterface:
                     trigger_type.send(TriggerCode.SPIKE_NEGATIVE)
 
             if position == "ASSET":
-                 key = event.getKeys(keyList=[params["exp"]["sell_key"]])
-                 if key and not action_taken:
+                key = event.getKeys(keyList=[params["exp"]["sell_key"]])
+                if key and not action_taken:
                       action_value = values[i-1]
                       position = "CASH"
                       action_taken = (True, i)

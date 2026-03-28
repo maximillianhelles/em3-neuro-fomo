@@ -14,3 +14,4 @@ blocks = ["control", "low", "high"]
 for block in blocks:
     run_block(exp_interface, subject_id, block)
 
+## Centralize blocks in config
