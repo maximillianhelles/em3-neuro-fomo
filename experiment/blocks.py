@@ -24,9 +24,17 @@ def run_block(interface, subject_id, block_id):
 
     # Create new dataset
     csv_path = os.path.join(base_dir, f"../data/behavioral_data/{block_id}/{subject_id}_results_block.csv")
-    
+
+    if os.path.exists(csv_path):
+        raise FileExistsError(
+            f"Data file already exists for subject '{subject_id}', block '{block_id}': {csv_path}\n"
+            "Delete or rename it before re-running."
+        )
+
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+
     fieldnames = ["participant_id", "block_id", "trial_num", "ticker",
-                "position", "direction", "chart_values", "action_taken", "action_value",
+                "position", "direction", "jump_pct", "chart_values", "action_taken", "action_value",
                 "final_value", "valence", "arousal", "regret"]
 
     with open(csv_path, "w", newline="") as f:
@@ -72,8 +80,8 @@ def run_block(interface, subject_id, block_id):
                 "ticker": ticker,
                 "position": trial,
                 "direction": direction,
-                "chart_values": [round(v, 4) for v in values],
                 "jump_pct": jump,
+                "chart_values": [round(v, 4) for v in values],
                 "action_taken": action_taken,
                 "action_value": action_value,
                 "final_value": values[-1],
