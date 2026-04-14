@@ -7,4 +7,4 @@ jdm:
   periods: 1440
   sigma: 0.0009216472100849788
   sigma_jump: 0.015
-  data_set: "data/financial_data/BTCUSD_1m_2017-2025.csv"
+  data_set: "Data/financial_data/BTCUSD_1m_2017-2025.csv"
