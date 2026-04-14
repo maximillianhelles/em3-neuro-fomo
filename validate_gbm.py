@@ -19,7 +19,7 @@ periods = params["jdm"]["periods"]
 def calc_gbm_values(init_value, periods, drift, volatility):
     """Pure GBM without jump - for validation"""
     np.random.seed(42)
-    shocks = np.random.normal(drift, volatility, periods)
+    shocks = np.random.normal(drift, volatility, periods) # # Bruger drift og sigma
     gbm_values = init_value * np.exp(np.cumsum(shocks))
     gbm_values = np.insert(gbm_values, 0, init_value)
     return gbm_values.tolist()
@@ -53,25 +53,36 @@ def get_market_stats(prices):
     return mu, sigma_est
 
 
-file_path = os.path.join(base_dir, params["jdm"]["data_set"])
-df = pd.read_csv(file_path, parse_dates=["Open time"], index_col="Open time")
-close_prices = np.array(df["Close"].tail(periods))
+file_path = os.path.join(base_dir, params["jdm"]["data_set"]) # # "Data/financial_data/BTCUSD_1m_2017-2025.csv"
+df = pd.read_csv(file_path, parse_dates=["Open time"], index_col="Open time") # # Kun "Open time" og "Close"
+close_prices = np.array(df["Close"].tail(periods)) # # Kun de sidste N=1440 perioder fra params.yaml
 
 init_value = float(close_prices[0])
 real_prices = close_prices
 
 simulated_prices = calc_gbm_values(
-    init_value=init_value,
-    periods=periods,
-    drift=drift,
-    volatility=sigma
+    #init_value=init_value,
+    #periods=periods,
+    #drift=drift,
+    #volatility=sigma
 )
+
+#til plot af calc_jdm
+#simulated_prices, pct_jump, jump_point = calc_jdm_values(
+    #init_value=init_value,
+    #periods=periods,
+    #drift=drift,
+    #volatility=sigma,
+    #direction=1
+#)
 
 simulated_prices = np.array(simulated_prices)
 
 plt.figure(figsize=(12, 6)) # ny figur, 12x6 tommer
 plt.plot(real_prices, label="Real BTC", alpha=0.7) #plot BTC
 plt.plot(simulated_prices, label="Simulated GBM", alpha=0.7) #plot GBM
+#til plot af calculate_jdm
+#plt.axvline(x=jump_point, color="red", linestyle="--", label=f"Jump at t={jump_point}") 
 plt.xlabel("Time Period")
 plt.ylabel("Price")
 plt.title("GBM Validation: Real vs Simulated (no jump)")
