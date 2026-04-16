@@ -13,7 +13,7 @@ from blocks import run_block
 
 exp_interface = ExpInterface(fullscr=False)
 subject_id = "002"
-blocks = ["high"]
+blocks = params["exp"]["blocks"]
 
 try:
     for block in blocks:
