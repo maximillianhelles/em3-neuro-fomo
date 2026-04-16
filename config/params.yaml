@@ -1,6 +1,12 @@
 exp:
-  trials_per_condition: 10
+  trials_per_condition: 1
   trigger_mode: dummy
+  serial_port: "COM4"
+  parallel_address: 0x0378
+  blocks:
+  - control
+  - low
+  - high
   sell_key: s
   buy_key: b
   iti_duration: 5.0

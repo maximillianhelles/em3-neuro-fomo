@@ -133,7 +133,9 @@ class ExpInterface:
                 
             return description_invested, portfolio, cash_description, cash
 
-        def _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, margins, values, index, position, display_base):
+        def _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, 
+                              margins, values, index, position, display_base):
+            
             visible = values[:index] if index > 0 else values[:1]
             bottom_y, top_y = _recompute_scale(visible)
 
@@ -153,7 +155,9 @@ class ExpInterface:
             if price_line is not None and index > 0:
                 price_line.vertices = list(zip(xs[:index], ys_visible))
                 price_line.draw()
-            description_invested, portfolio, cash_description, cash = portfolio_display(display_base, values[index], margins, position)
+            description_invested, portfolio, cash_description, cash = portfolio_display(
+                                                                        display_base, values[index], margins, position
+                                                                        )
             description_invested.draw()
             portfolio.draw()
             cash_description.draw()
@@ -161,20 +165,26 @@ class ExpInterface:
             self.win.flip()
 
         
-        _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, None, margins, values, 0, position, values[0])
+        _draw_chart_frame(self, x_axis, y_axis, y_top_text, 
+                          y_bottom_text, midline, None, margins, 
+                          values, 0, position, values[0]
+                          )
         core.wait(2.0)
 
         action_taken = (False, None)
         action_value = None
         for i in range(2, len(values)+1):
             display_base = action_value if action_taken[0] else values[0]
-            _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, margins, values, i-1, position, display_base)
 
             if i-1 == jump_point:
                 if jump > 0:
                     trigger_type.send(TriggerCode.SPIKE_POSITIVE)
                 else:
                     trigger_type.send(TriggerCode.SPIKE_NEGATIVE)
+
+            _draw_chart_frame(self, x_axis, y_axis, y_top_text,
+                               y_bottom_text, midline, price_line, margins, 
+                               values, i-1, position, display_base)
 
             escape = event.getKeys(keyList=["escape"])
             if escape:
