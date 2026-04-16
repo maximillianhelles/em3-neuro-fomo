@@ -56,7 +56,7 @@ def get_trigger_sender():
     if mode == "dummy":
         return DummyTrigger()
 
-    # Auto-detect: try serial first, fall back to parallel, then to dummy.
+    # Try serial first, fall back to parallel, then to dummy.
     if mode == "hardware":
         serial_port = params["exp"].get("serial_port", "COM4")
         parallel_addr = int(params["exp"].get("parallel_address", 0x0378))
