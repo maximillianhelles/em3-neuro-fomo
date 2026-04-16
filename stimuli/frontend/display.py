@@ -134,7 +134,7 @@ class ExpInterface:
             return description_invested, portfolio, cash_description, cash
 
         def _draw_chart_frame(self, x_axis, y_axis, y_top_text, y_bottom_text, midline, price_line, 
-                              margins, values, index, position, display_base):
+                              margins, values, index, position, display_base, portfolio_value):
             
             visible = values[:index] if index > 0 else values[:1]
             bottom_y, top_y = _recompute_scale(visible)
@@ -155,8 +155,9 @@ class ExpInterface:
             if price_line is not None and index > 0:
                 price_line.vertices = list(zip(xs[:index], ys_visible))
                 price_line.draw()
+            pv = portfolio_value if portfolio_value is not None else values[index]
             description_invested, portfolio, cash_description, cash = portfolio_display(
-                                                                        display_base, values[index], margins, position
+                                                                        display_base, pv, margins, position
                                                                         )
             description_invested.draw()
             portfolio.draw()
@@ -167,14 +168,22 @@ class ExpInterface:
         
         _draw_chart_frame(self, x_axis, y_axis, y_top_text, 
                           y_bottom_text, midline, None, margins, 
-                          values, 0, position, values[0]
+                          values, 0, position, values[0], None
                           )
         core.wait(2.0)
 
         action_taken = (False, None)
         action_value = None
         for i in range(2, len(values)+1):
-            display_base = action_value if action_taken[0] else values[0]
+            if action_taken[0] and action_taken[1] == "BUY":
+                portfolio_value = values[0] * (values[i-1] / action_value)
+                display_base = values[0]
+            elif action_taken[0]: 
+                portfolio_value = values[i-1]
+                display_base = action_value
+            else:
+                portfolio_value = values[i-1]
+                display_base = values[0]
 
             if i-1 == jump_point:
                 if jump > 0:
@@ -184,7 +193,7 @@ class ExpInterface:
 
             _draw_chart_frame(self, x_axis, y_axis, y_top_text,
                                y_bottom_text, midline, price_line, margins, 
-                               values, i-1, position, display_base)
+                               values, i-1, position, display_base, portfolio_value)
 
             escape = event.getKeys(keyList=["escape"])
             if escape:
@@ -194,18 +203,17 @@ class ExpInterface:
             if position == "ASSET":
                 key = event.getKeys(keyList=[params["exp"]["sell_key"]])
                 if key and not action_taken[0]:
-                      action_value = values[i-1]
-                      position = "CASH"
-                      action_taken = (True, i)
-                      trigger_type.send(TriggerCode.SELL_ACTION)
-
+                    action_value = values[i-1]
+                    position = "CASH"
+                    action_taken = (True, "SELL")
+                    trigger_type.send(TriggerCode.SELL_ACTION)
             else:
                 key = event.getKeys(keyList=[params["exp"]["buy_key"]])
                 if key and not action_taken[0]:
-                      action_value = values[i-1]
-                      position = "ASSET"
-                      action_taken = (True, i)
-                      trigger_type.send(TriggerCode.BUY_ACTION)
+                    action_value = values[i-1]
+                    position = "ASSET"
+                    action_taken = (True, "BUY")
+                    trigger_type.send(TriggerCode.BUY_ACTION)
 
             core.wait(1.0) if i == len(values) else core.wait(0.01)
         
