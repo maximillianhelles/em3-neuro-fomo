@@ -1,10 +1,61 @@
 exp:
-  trials_per_condition: 10
+  blocks:
+  - control
+  - low
+  - high
+  buy_key: b
+  iti_duration: 4.0
+  sell_key: s
+  serial_port: /dev/tty.usbserial-DN2Q03LO
+  tickers:
+  - AXVQ
+  - BLNT
+  - CRMW
+  - DVOX
+  - EWKZ
+  - FLTB
+  - GSPN
+  - HVRX
+  - ITKM
+  - JPLC
+  - KZND
+  - LBWT
+  - MNXQ
+  - NVBK
+  - OXWM
+  - PJLF
+  - QRTN
+  - RSTV
+  - SWKZ
+  - TXPN
+  - ULYB
+  - VMCQ
+  - WJNX
+  - XBLT
+  - YKVP
+  - ZRWM
+  - ACFN
+  - BDQT
+  - CLPX
+  - DMVW
+  - ENKB
+  - FQRZ
+  - GTWL
+  - HCNP
+  - IJVX
+  - JBMW
+  - KCRL
+  - LDQP
+  - MXTV
+  - NWBZ
+  trials_per_condition: 1
   trigger_mode: dummy
 jdm:
-  mu: 1.031982063325633e-06
-  mu_jump: 0.08
-  periods: 1440
-  sigma: 0.0009216472100849788
-  sigma_jump: 0.015
-  data_set: "Data/financial_data/BTCUSD_1m_2017-2025.csv"
+
+  bar_seconds: 300
+  data_set: data/financial_data/btcusd_1-min_data.csv
+  mu: 6.235480524832378e-06
+  mu_jump: 0.09
+  periods: 288
+  sigma: 0.00241835651687514
+  sigma_jump: 0.01

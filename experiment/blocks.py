@@ -2,62 +2,97 @@ import os
 import random
 import yaml
 import sys
+import csv
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir, ".."))
 
 from triggers import get_trigger_sender, TriggerCode
 from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm
-from stimuli.frontend.display import ExpInterface
 
-yaml_path = os.path.join(base_dir, "../config/params.yaml")
+config_path = os.path.join(base_dir, "../config/params.yaml")
 
-with open(yaml_path,"r") as f:
+with open(config_path,"r") as f:
     params = yaml.safe_load(f)
 
-def run_block(block_id, fullscr=False):
-    conds = ["A","B","C","D"]
-    trials = conds * params["exp"]["trials_per_condition"]
-    random.shuffle(trials)
+def run_block(interface, subject_id, block_id):
+    # Determine intial capital
+    capital_map = {"control": 1, "low": 50, "high": 100}
+    if block_id not in capital_map:
+        raise ValueError(f"{block_id} is an invalid block_id")
+    capital = capital_map[block_id]
+
+    # Create new dataset
+    csv_path = os.path.join(base_dir, f"../data/behavioral_data/{block_id}/{subject_id}_results_block.csv")
+
+    if os.path.exists(csv_path):
+        raise FileExistsError(
+            f"Data file already exists for subject '{subject_id}', block '{block_id}': {csv_path}\n"
+            "Delete or rename it before re-running."
+        )
+
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+
+    fieldnames = ["participant_id", "block_id", "trial_num", "ticker",
+                "position", "direction", "jump_pct", "chart_values", "action_taken", "action_value",
+                "final_value", "valence", "arousal", "regret"]
+
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+
+    # Randomize trials
+    combos = [("ASSET", 1), ("ASSET", -1), ("CASH", 1), ("CASH", -1)]
+    all_trials = combos * params["exp"]["trials_per_condition"]
+    random.shuffle(all_trials)
+    trials, directions = zip(*all_trials)
+    tickers = random.sample(params["exp"]["tickers"], len(all_trials))
+    trial_nums = range(1, len(all_trials)+1)
 
     trigger = get_trigger_sender()
     trigger.send(TriggerCode.BLOCK_START)
-    block = ExpInterface(fullscr)
-    for trial in trials:
-        # Position choice logic via Psychopy - need to create in /stimuli/frontend using a class
-        position = "invested" if trial in ["A", "C"] else "uninvested"
-        if position == "invested":
-            trigger.send(TriggerCode.POSITION_INVESTED)
+
+    for trial, ticker, direction, trial_num in zip(trials, tickers, directions, trial_nums):
+        if trial == "ASSET":
+            trigger.send(TriggerCode.ASSET)
         else:
-            trigger.send(TriggerCode.POSITION_UNINVESTED)
+            trigger.send(TriggerCode.CASH)
 
-        capital_map = {"control": 0, "block1": 50, "block2": 100}
-        if block_id not in capital_map:
-            raise ValueError(f"{block_id} is an invalid block_id")
-        capital = capital_map[block_id]
+        # Trial information becomes visible to participant
+        interface.position_disclosure(trial, capital, ticker)
 
-        values, jump, jump_point = jdm(init_value=capital) if trial in ["A", "B"] else jdm(init_value=capital, direction=-1)
+        # Trial begins
+        values, jump, jump_point = jdm(init_value=capital, direction=direction)
         trigger.send(TriggerCode.TRIAL_START)
-        block.build_chart(values, position, jump, jump_point, trigger)
-        # Show SAM-rating screen
+        action_taken, action_value = interface.chart_phase(values, trial, jump, jump_point, trigger)
+
+        # SAM-rating
         trigger.send(TriggerCode.SAM_RATING)
+        responses = interface.sam_rating()
 
-        # Log trial to CSV logic
+        # Append to behavioral data to CSV
+        with open(csv_path, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writerow({
+                "participant_id": subject_id,
+                "block_id": block_id,
+                "trial_num": trial_num,
+                "ticker": ticker,
+                "position": trial,
+                "direction": direction,
+                "jump_pct": jump,
+                "chart_values": [round(v, 4) for v in values],
+                "action_taken": action_taken,
+                "action_value": action_value,
+                "final_value": values[-1],
+                "valence": responses["valence"],
+                "arousal": responses["arousal"],
+                "regret": responses["regret"],
+            })
 
+        # Fix Cross
         trigger.send(TriggerCode.TRIAL_END)
-        block.fix_cross()
+        interface.fix_cross()
     
     trigger.send(TriggerCode.BLOCK_END)
-
-run_block("block2")
-##### TRIAL FLOW #####
-# 1. Choose between two masked options. Position randomized. First leads to invested in stock, second leads to cash position.
-# 2. After choice, let participant know of the consequence
-# 3. Run main trial (not to scale):
-# ┌─────────────────┬──────────────────────────┬──────────────────────────────┐
-# │                 │                          │                              │
-# │   GBM Chart     │  Your cash / Portfolio   │  What if Cash / Portfolio    │
-# │                 │                          │                              │
-# └─────────────────┴──────────────────────────┴──────────────────────────────┘
-# 4. SAM Rating 
-# 6. 10s fixation cross to reset
+    print(f"{subject_id} has succesfully completed block: {block_id}")
