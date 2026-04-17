@@ -1,5 +1,6 @@
 import yaml
 import os
+import serial
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 yaml_path = os.path.join(base_dir, "../config/params.yaml")
@@ -28,25 +29,11 @@ class DummyTrigger:
 
 class SerialTrigger:
     def __init__(self, port_name, baudrate=115200):
-        import serial
         self.port = serial.Serial(port_name, baudrate)
         print(f"[TTL] Serial port initialized at {port_name}")
 
-    def send(self, code):
+    def send(self, code=1):
         self.port.write(code.to_bytes(1, "big"))
-        print(f"[TTL] Trigger sent: {code}")
-
-class ParallelTrigger:
-    def __init__(self, address):
-        from psychopy import parallel, core
-        self._core = core
-        self.port = parallel.ParallelPort(address=address)
-        print(f"[TTL] Parallel port initialized at {hex(address)}")
-
-    def send(self, code):
-        self.port.setData(code)
-        self._core.wait(0.020)
-        self.port.setData(0)
         print(f"[TTL] Trigger sent: {code}")
 
 
@@ -58,20 +45,12 @@ def get_trigger_sender():
 
     # Try serial first, fall back to parallel, then to dummy.
     if mode == "hardware":
-        serial_port = params["exp"].get("serial_port", "COM4")
-        parallel_addr = int(params["exp"].get("parallel_address", 0x0378))
-
+        serial_port = params["exp"]["serial_port"]
         try:
             return SerialTrigger(serial_port)
         except NotImplementedError:
             pass
         except Exception as e:
             print(f"[TTL] Serial init failed ({e}); trying parallel.")
-
-        try:
-            return ParallelTrigger(parallel_addr)
-        except Exception as e:
-            print(f"[TTL] Parallel init failed ({e}); falling back to dummy.")
-            return DummyTrigger()
 
     raise ValueError(f"Unknown trigger mode: {mode!r} (expected 'dummy' or 'hardware')")

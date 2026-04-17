@@ -1,15 +1,12 @@
 exp:
-  trials_per_condition: 1
-  trigger_mode: dummy
-  serial_port: "COM4"
-  parallel_address: 0x0378
   blocks:
   - control
   - low
   - high
-  sell_key: s
   buy_key: b
-  iti_duration: 5.0
+  iti_duration: 4.0
+  sell_key: s
+  serial_port: /dev/tty.usbserial-DN2Q03LO
   tickers:
   - AXVQ
   - BLNT
@@ -51,10 +48,13 @@ exp:
   - LDQP
   - MXTV
   - NWBZ
+  trials_per_condition: 1
+  trigger_mode: dummy
 jdm:
-  mu: 1.031982063325633e-06
+  bar_seconds: 300
+  data_set: data/financial_data/btcusd_1-min_data.csv
+  mu: 6.235480524832378e-06
   mu_jump: 0.09
-  periods: 1440
-  sigma: 0.0009216472100849788
+  periods: 288
+  sigma: 0.00241835651687514
   sigma_jump: 0.01
-  data_set: "data/financial_data/BTCUSD_1m_2017-2025.csv"
