@@ -29,7 +29,6 @@ class DummyTrigger:
 
 class SerialTrigger:
     def __init__(self, port_name, baudrate=115200):
-        import serial
         self.port = serial.Serial(port_name, baudrate)
         print(f"[TTL] Serial port initialized at {port_name}")
 
@@ -47,8 +46,6 @@ def get_trigger_sender():
     # Try serial first, fall back to parallel, then to dummy.
     if mode == "hardware":
         serial_port = params["exp"]["serial_port"]
-        parallel_addr = int(params["exp"].get("parallel_address", params["exp"]["parallel_address"]))
-
         try:
             return SerialTrigger(serial_port)
         except NotImplementedError:
