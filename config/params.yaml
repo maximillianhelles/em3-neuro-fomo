@@ -1,7 +1,7 @@
 exp:
   trials_per_condition: 1
-  trigger_mode: dummy
-  serial_port: "COM4"
+  trigger_mode: hardware
+  serial_port: "/dev/tty.usbserial-DN2Q03LO"
   parallel_address: 0x0378
   blocks:
   - control
@@ -9,7 +9,7 @@ exp:
   - high
   sell_key: s
   buy_key: b
-  iti_duration: 5.0
+  iti_duration: 4.0
   tickers:
   - AXVQ
   - BLNT
@@ -52,9 +52,10 @@ exp:
   - MXTV
   - NWBZ
 jdm:
+  bar_seconds: 300
+  data_set: "data/financial_data/btcusd_1-min_data.csv"
   mu: 1.031982063325633e-06
   mu_jump: 0.09
-  periods: 1440
+  periods: 288
   sigma: 0.0009216472100849788
   sigma_jump: 0.01
-  data_set: "data/financial_data/BTCUSD_1m_2017-2025.csv"
