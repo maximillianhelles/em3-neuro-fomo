@@ -1,6 +1,5 @@
 import yaml
 import numpy as np
-import matplotlib.pyplot as plt
 import random
 import os
 
@@ -35,12 +34,3 @@ def calc_jdm_values(
     total_values = pre_values + post_values.tolist()
 
     return total_values, direction*pct_jump, jump_point
-
-# test, jump, jump_point = calc_jdm_values()
-# print(f"--- VALUES --- \n {test}")
-# print(f"\n --- PERCENTAGE JUMP --- \n {round(jump*100, 2)}%")
-
-# plt.plot(test, label="Asset Price", color='blue')
-# plt.ylim(85, 115)
-# plt.axhline(y=100, color='gray', linestyle='--', alpha=0.5)
-# plt.show()

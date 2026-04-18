@@ -142,8 +142,8 @@ class ExpInterface:
             ys_visible = np.interp(visible, (bottom_y, top_y), (margins["bottom"], margins["up"]))
             y_mid_px = np.interp(values[0], (bottom_y, top_y), (margins["bottom"], margins["up"]))
 
-            y_top_text.text = str(int(round(top_y, 0)))
-            y_bottom_text.text = str(int(round(bottom_y, 0)))
+            y_top_text.text = f"{top_y:.1f}"
+            y_bottom_text.text = f"{bottom_y:.1f}"
             midline.start = (margins["left"], y_mid_px)
             midline.end   = (margins["right"], y_mid_px)
 
@@ -215,7 +215,7 @@ class ExpInterface:
                     action_taken = (True, "BUY")
                     trigger_type.send(TriggerCode.BUY_ACTION)
 
-            core.wait(1.0) if i == len(values) else core.wait(0.01)
+            core.wait(1.0) if i == len(values) else core.wait(0.025)
         
         return action_taken, action_value
 
