@@ -16,7 +16,7 @@ def calc_jdm_values(
         direction=1):
     
     # GBM calculation
-    shocks = np.random.normal(drift, volatility, periods)
+    shocks = np.random.normal(drift - 0.5 * volatility**2, volatility, periods)
     gbm_values = init_value * np.exp(np.cumsum(shocks))
     gbm_values = np.insert(gbm_values, 0, init_value).tolist()
 
