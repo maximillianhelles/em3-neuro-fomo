@@ -48,7 +48,6 @@ exp:
   - LDQP
   - MXTV
   - NWBZ
-  trials_per_condition: 1
   trigger_mode: dummy
 jdm:
   bar_seconds: 300
