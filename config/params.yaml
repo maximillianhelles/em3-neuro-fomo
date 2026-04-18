@@ -51,9 +51,9 @@ exp:
   trigger_mode: dummy
 jdm:
   bar_seconds: 300
-  data_set: data/financial_data/btcusd_1-min_data.csv
-  mu: 6.235480524832378e-06
+  data_set: data/financial_data/BTCUSD_1m_2017-2025.csv
+  mu: 1.031982063325633e-06
   mu_jump: 0.09
   periods: 288
-  sigma: 0.00241835651687514
+  sigma: 0.0009216472100849788
   sigma_jump: 0.01
