@@ -13,32 +13,35 @@ from blocks import run_block
 
 blocks = params["exp"]["blocks"]
 
-
 while True:
     subject_id = input("Enter Participant ID: ").strip()
     if not subject_id:
         print("ID cannot be empty.")
         continue
-    collision = False
-    for block in blocks:
-        if os.path.exists(f"../data/behavioral_data/{block}/{subject_id}_results_block.csv"):
-            print(f"Subject ID {subject_id} already has data. Try another.")
-            collision = True
-            break
-    if collision:
+    if any(os.path.exists(os.path.join(base_dir, f"../data/behavioral_data/{block}/{subject_id}_results_block.csv"))
+            for block in blocks):
+        print(f"Subject ID {subject_id} already has data. Try another.")
         continue
     break
 
 while True:
-    participant_type = input("Enter Participant Type (behavioral/eeg): ").strip().lower()
+    participant_type = input("Enter Participant Type (behavioral/eeg/custom): ").strip().lower()
     if participant_type in ("behavioral", "behavioural"):
         trials_per_condition = 7
         break
     elif participant_type == "eeg":
         trials_per_condition = 20
         break
+    elif participant_type == "custom":
+        while True:
+            try:
+                trials_per_condition = int(input("Enter an integer: ").strip())
+                break
+            except ValueError:
+                print("That's not an integer. Try again.")
+        break
     else:
-        print("Invalid type. Enter 'behavioral' or 'eeg'.")
+        print("Invalid type. Enter 'behavioral', 'eeg', or 'custom'.")
 
 exp_interface = ExpInterface(fullscr=False)
 
