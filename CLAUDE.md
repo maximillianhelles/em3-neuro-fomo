@@ -12,7 +12,7 @@ EEG neuroscience experiment studying Event-Related Potentials (P300 and FRN) in 
 pip install -r requirements.txt
 ```
 
-Python version is pinned to 3.10.13 via `.python-version`.
+Python version is pinned to 3.10.13 via `.python-version`. PsychoPy is required for the display layer but will gracefully print a warning if missing.
 
 ## Running the Experiment
 
@@ -20,33 +20,43 @@ Python version is pinned to 3.10.13 via `.python-version`.
 # 1. (Re-)estimate GBM parameters from historical BTC data → updates config/params.yaml
 python3 analysis/pre/gbm_params.py
 
-# 2. Run the experiment (must be run from the experiment/ directory)
-cd experiment
-python3 run_exp.py
+# 2. Run the experiment
+python3 experiment/run_exp.py
 ```
 
-Set `trigger_mode: dummy` in `config/params.yaml` to run without a parallel port (hardware-free testing). Set `fullscr=False` in `run_exp.py` for windowed mode.
+Scripts resolve all paths via `__file__`, so they can be run from any working directory.
+
+Set `trigger_mode: dummy` in `config/params.yaml` to run without hardware (silent no-op triggers). Set `trigger_mode: hardware` for serial port triggers. Set `fullscr=False` in `run_exp.py` for windowed mode.
+
+On launch, `run_exp.py` prompts for a participant ID (rejects duplicates that already have data) and participant type (`behavioral` = 7 trials/condition, `eeg` = 20 trials/condition, `custom` = manual entry).
 
 ## Architecture
 
-The project has four layers:
+**Config** — `config/params.yaml` is the single source of truth for all experiment and model parameters. `config/trial_plans.json` contains pre-generated, seeded trial orderings (position × spike direction) for each block; regenerate with `config/trial_generator.py`.
 
-**Config** — `config/params.yaml` is the single source of truth for all experiment and model parameters (trial counts, ITI duration, key bindings, JDM parameters, asset tickers).
+**Stimuli backend** (`stimuli/backend/jmp_diff_model.py`) — `calc_jdm_values()` generates a single trial's price path: GBM base movement + a directional spike injected at a random point between 10%–90% of the trial. Returns `(values, jump_pct, jump_point)`. Parameters come from `params.yaml` but can be overridden via kwargs.
 
-**Stimuli backend** (`stimuli/backend/`) — `jmp_diff_model.py` generates asset price paths using the Jump-Diffusion model. `hist_data_processing.py` parses historical CSV data. `gbm_params.py` estimates drift (mu) and volatility (sigma) and writes them back to `params.yaml`.
+**Stimuli frontend** (`stimuli/frontend/display.py`) — PsychoPy-based `ExpInterface` class. Key methods: `position_disclosure()` (shows position/capital), `chart_phase()` (renders live chart tick-by-tick at 25ms intervals, handles buy/sell keypresses, sends TTL triggers at spike onset), `sam_rating()` (valence/arousal/regret on 1–9 scale), `fix_cross()` (ITI fixation). Escape key aborts via `ExperimentAborted` exception at any phase.
 
-**Stimuli frontend** (`stimuli/frontend/display.py`) — PsychoPy-based `ExpInterface` class that renders the live chart, real-time portfolio values (actual + counterfactual), position disclosure screen, and SAM (Self-Assessment Manikin) ratings.
+**Experiment orchestration** (`experiment/`) — `run_exp.py` is the entry point. `blocks.py:run_block()` handles trial-level logic: selects trials from the master plan via `get_participant_plan()`, assigns random tickers, seeds RNG deterministically per trial (`block_offset + trial_num`), and appends behavioral data row-by-row to CSV. `triggers.py` provides `TriggerCode` constants and `get_trigger_sender()` factory (returns `DummyTrigger` or `SerialTrigger`).
 
-**Experiment orchestration** (`experiment/`) — `run_exp.py` is the entry point; it instantiates `ExpInterface` and calls `run_block()` for each of the three blocks (control/low/high). `blocks.py` handles trial-level logic: randomization of conditions, capturing buy/sell keypresses, and writing behavioral data to CSV. `triggers.py` sends TTL codes via parallel port (or no-ops in dummy mode) for EEG time-locking.
+**Analysis** (`analysis/pre/gbm_params.py`) — Estimates drift (mu) and volatility (sigma) from historical BTC 5-minute returns and writes them back to `params.yaml`.
 
 ## Experimental Design
 
-- 3 blocks: **control** (no money), **low** (50 DKK), **high** (100 DKK)
-- 40 trials/block, 4 conditions: Gain (invested + positive spike), Loss (invested + negative spike), FOMO (cash + positive spike), Relief (cash + negative spike)
-- Trial flow: position disclosure → JDM chart with live buy/sell → SAM rating → 5s fixation cross
+- 3 blocks: **control** (1 DKK nominal), **low** (50 DKK), **high** (100 DKK)
+- 4 conditions per block: Gain (invested + positive spike), Loss (invested + negative spike), FOMO (cash + positive spike), Relief (cash + negative spike)
+- Participant actions (buy/sell) can shift their realized condition at spike time
 - Behavioral data saved to `data/behavioral_data/{block_id}/{subject_id}_results_block.csv`
 - EEG data goes to `data/eeg-data/` (populated externally by recording software)
 
 ## TTL Trigger Codes
 
-Trigger codes are sent in `triggers.py` at spike onset and other key events to time-lock EEG epochs. The `trigger_mode` config key switches between `parallel` (real hardware) and `dummy` (silent no-op).
+Defined in `experiment/triggers.py` as `TriggerCode` class constants (1–12). Sent at block start/end, trial start/end, position disclosure, buy/sell actions, positive/negative spikes, and SAM rating onset. The `trigger_mode` config key switches between `dummy` and `hardware`.
+
+## Key Conventions
+
+- All config reads go through `params.yaml`; never hardcode experiment parameters.
+- Trial seeds are deterministic: `block_offset + trial_num` ensures reproducibility across runs.
+- The chart renders one data point per frame at 25ms intervals (40 fps effective), with a 1s pause on the final frame.
+- No test suite exists; verify changes by running with `trigger_mode: dummy` and `fullscr=False`.

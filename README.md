@@ -18,7 +18,7 @@ This study's objective is to investigate Event-Related Potentials (ERPs) associa
 - **Spikes:** At randomized points within 10% and 90% of the trial duration, the model introduces sudden volatility in a predetermined direction, mimicking volatility spikes that frequently occur in real markets (e.g. positive/negative news). Combining GBM with these spikes result in a jump-diffusion model (jdm).
 - **Behavioral Agency:** To induce genuine emotional investment while preserving experimental control, participants began each trial with a predetermined position — either holding an asset or holding cash — and were given the option to act on it during the trial. In asset trials, participants could elect to sell their holding at any point, forfeiting the right to re-enter. In cash trials, participants could choose to purchase the asset, after which the position was held until trial end, at which point its asset value was converted to cash. This design leverages the endowment effect and genuine decision-making agency to elicit loss aversion and counterfactual regret, while maintaining full experimental control over spike direction. The participant's buy/sell decision constitutes a behavioral variable that is analysed as a moderator of ERP responses.
 - **Real-Time Counterfactual Display:** During each trial, participants could observe both their actual portfolio value and the value of the unchosen alternative updating in real time alongside the chart. This continuous counterfactual exposure was designed to strengthen the affective magnitude of FOMO and relief responses. Portfolio values were displayed in peripheral vision to minimize interference with spike-locked ERP components.
-- **Inter-Trial Recovery:** A 5-second fixation cross was presented between successive trials to allow for affective baseline restoration. This interval serves as a washout period, neutralizing the psychological impact of prior market shocks and preventing carryover effects between trials.
+- **Inter-Trial Recovery:** A 4-second fixation cross was presented between successive trials to allow for affective baseline restoration. This interval serves as a washout period, neutralizing the psychological impact of prior market shocks and preventing carryover effects between trials.
 
 ## Design & Incentivization
 
@@ -30,7 +30,7 @@ The experiment was divided into three separate blocks:
 
 Block order was counterbalanced across participants for blocks 2 and 3. Concluding the experiment, the participant received the monetary outcome of a randomly selected trial from either block two or three. This incentive structure was designed to ensure genuine activation of the brain's mesolimbic pathways. Due to the anticipated low sample size, the experiment was designed as a within-subject design.
 
-Across the 40 trials, participants held an asset position in 20 and a cash position in the remaining 20, with initial values of 0, 50, or 100 DKK assigned per trial.
+Each block is drawn from a pre-generated master plan of 80 trials (20 per condition × 4 conditions), shuffled once with a block-specific seed and committed to `config/trial_plans.json` for full reproducibility across participants. The master plan is truncated per participant type — typically 20 trials per condition for EEG sessions and 7 per condition for behavioral pilots — while preserving the original trial indices so the seeded price paths remain aligned. Initial capital is fixed per block: 1 DKK nominal for Control, 50 DKK for Low, and 100 DKK for High.
 
 ## Conditions
 
@@ -41,14 +41,14 @@ Conditions are defined by the intersection of initial position and spike directi
 | **Invested**      | Condition A: Gain    | Condition B: Loss     |
 | **Not Invested**  | Condition C: FOMO    | Condition D: Relief   |
 
-Spike direction was predetermined across trials (20 upward, 20 downward) and randomization applied only to spike timing within each trial (between 10% and 90% of trial duration). Initial position was likewise controlled (20 asset, 20 cash). The participant's choice to buy or sell prior to the spike shifts their realized condition; for example, selling before a negative spike converts a Loss (B) outcome into a FOMO (C) outcome. This behavioral split is treated as a moderating variable in the ERP analysis rather than a design factor. Conditions were strictly counterbalanced across trials within each block to ensure equal base representation.
+Spike direction and initial position are both predetermined: every block's master plan contains exactly 20 trials per (position × direction) combination, shuffled with a block-specific seed. Within each trial, randomization applies only to spike timing (between 10% and 90% of trial duration). Per-trial RNG is seeded deterministically from block and trial index (`block_offset + trial_num`), so the exact price path for any (block, trial) pair is reproducible across runs and participants. The participant's choice to buy or sell prior to the spike shifts their realized condition; for example, selling before a negative spike converts a Loss (B) outcome into a FOMO (C) outcome. This behavioral split is treated as a moderating variable in the ERP analysis rather than a design factor.
 
 ## Trial Flow
 
 1. **Position disclosure** — participant is informed whether they hold the asset or cash for this trial
 2. **JDM trial** — chart runs with real-time portfolio values displayed for both actual and counterfactual positions; participant may buy or sell at any point; spike occurs at a randomized point within 10% and 90% of start and end, respectively.
-3. **SAM rating** — participant rates current valence and arousal using the Self-Assessment Manikin scale
-4. **Fixation cross** — 5-second inter-trial interval
+3. **SAM rating** — participant rates valence, arousal, and regret on a 1–9 scale
+4. **Fixation cross** — 4-second inter-trial interval
 
 ## Neurological Markers
 
