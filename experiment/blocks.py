@@ -10,13 +10,12 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir, ".."))
 
 from triggers import get_trigger_sender, TriggerCode
-from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm
+from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm, _load_params
 
 config_path = os.path.join(base_dir, "../config/params.yaml")
 trial_plans_path = os.path.join(base_dir, "../config/trial_plans.json")
 
-with open(config_path,"r") as f:
-    params = yaml.safe_load(f)
+config = _load_params(config_path)
 
 with open(trial_plans_path, "r") as f:
     TRIAL_PLANS = json.load(f)
@@ -61,7 +60,14 @@ def run_block(interface, subject_id, block_id, trials_per_condition):
     master_plan = [tuple(t) for t in TRIAL_PLANS[block_id]]
     participant_plan = get_participant_plan(master_plan, trials_per_condition)
 
-    tickers = random.sample(params["exp"]["tickers"], len(participant_plan))
+    if len(config["exp"]["tickers"]) < trials_per_condition*4:
+        raise ValueError(
+            f"""Not enough unique tickers. \n 
+            Number of unique tickers: {len(config["exp"]["tickers"])}\n
+            Number of required unique tickers: {trials_per_condition*4}"""
+            )
+    
+    tickers = random.sample(config["exp"]["tickers"], len(participant_plan))
 
     trigger = get_trigger_sender()
     trigger.send(TriggerCode.BLOCK_START)
