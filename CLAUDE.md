@@ -18,13 +18,13 @@ Python version is pinned to 3.10.13 via `.python-version`. PsychoPy is required 
 
 ```bash
 # 1. (Re-)estimate GBM parameters from historical BTC data → updates config/params.yaml
-cd analysis/pre && python3 gbm_params.py
+python3 analysis/pre/gbm_params.py
 
-# 2. Run the experiment (must be run from the experiment/ directory due to relative imports)
-cd experiment && python3 run_exp.py
+# 2. Run the experiment
+python3 experiment/run_exp.py
 ```
 
-Both scripts use relative paths internally, so they **must** be run from their own directories.
+Scripts resolve all paths via `__file__`, so they can be run from any working directory.
 
 Set `trigger_mode: dummy` in `config/params.yaml` to run without hardware (silent no-op triggers). Set `trigger_mode: hardware` for serial port triggers. Set `fullscr=False` in `run_exp.py` for windowed mode.
 
