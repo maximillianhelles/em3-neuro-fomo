@@ -5,20 +5,25 @@ import os
 base_dir = os.path.dirname(os.path.abspath(__file__))
 yaml_path = os.path.join(base_dir, "../../config/params.yaml")
 
-with open(yaml_path, "r") as f:
-    params = yaml.safe_load(f)
+def _load_params():
+    with open(yaml_path, "r") as f:
+        return yaml.safe_load(f)["jdm"]
 
-def calc_jdm_values(
-        init_value=100, drift=params["jdm"]["mu"], 
-        volatility=params["jdm"]["sigma"], periods=params["jdm"]["periods"],
-        jump=params["jdm"]["mu_jump"], std_jump=params["jdm"]["sigma_jump"],
-        direction=1, rng = None):
+def calc_jdm_values(init_value=100, direction=1, rng=None, **overrides):
     
     if rng is None:
         rng = np.random.default_rng()
     
+    # Initialize parameters
+    p = _load_params()
+    drift = overrides.get("drift", p["mu"])
+    volatility = overrides.get("volatility", p["sigma"])
+    periods = overrides.get("periods", p["periods"])
+    jump = overrides.get("jump", p["mu_jump"])
+    std_jump = overrides.get("std_jump", p["sigma_jump"])
+    
     # GBM calculation
-    shocks = rng.normal(drift - 0.5*volatility**2, volatility, periods)
+    shocks = rng.normal(drift, volatility, periods) # No ito correction since mu already based on ito corrected log returns
     gbm_values = init_value * np.exp(np.cumsum(shocks))
     gbm_values = np.insert(gbm_values, 0, init_value).tolist()
 
