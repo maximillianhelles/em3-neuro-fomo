@@ -4,6 +4,7 @@ import yaml
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir, ".."))
+sys.path.append(base_dir)
 config_path = os.path.join(base_dir, "../config/params.yaml")
 with open(config_path, "r") as f:
     params = yaml.safe_load(f)

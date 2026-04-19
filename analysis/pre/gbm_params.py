@@ -28,7 +28,7 @@ data_set = params["jdm"]["data_set"]
 print(f"Loading data_set at {yaml_path}")
 
 df = pd.read_csv(
-    f"../../{data_set}",
+    os.path.join(base_dir, "../..", data_set),
     parse_dates=["Open time"],
     index_col="Open time"
 )

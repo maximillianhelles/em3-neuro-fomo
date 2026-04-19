@@ -8,6 +8,7 @@ import numpy as np
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir, ".."))
+sys.path.append(base_dir)
 
 from triggers import get_trigger_sender, TriggerCode
 from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm, _load_params
