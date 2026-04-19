@@ -3,29 +3,19 @@ import yaml
 import os
 import pandas as pd
 
-def estimate_gbm_params(series):
-    log_rets = np.log(series / series.shift(1))
-    
-    time_diff = series.index.to_series().diff().dt.total_seconds()
-    log_rets = log_rets[time_diff == 60]
+def estimate_gbm_params(series, freq_seconds=60):
+    if freq_seconds > 60:
+        series = series.resample(f"{freq_seconds}s").last().dropna()
 
-    grouped = log_rets.groupby(log_rets.index.date)
+    log_rets = np.log(series / series.shift(1)).dropna()
 
-    results = []
-    for date, day_rets in grouped:
-        day_rets = day_rets.dropna()
-        if len(day_rets) < 2:
-            continue
-        results.append({
-            "date": date,
-            "mean": day_rets.mean(),
-            "std": day_rets.std()
-        })
+    if len(log_rets) < 2:
+        raise ValueError(f"Only {len(log_rets)} valid returns; cannot estimate.")
 
-    mu_est = np.mean([i["mean"] for i in results])
-    sigma_est = np.mean([i["std"] for i in results])
+    mu_est = log_rets.mean()
+    sigma_est = log_rets.std(ddof=1)
 
-    return mu_est, sigma_est
+    return mu_est, sigma_est, len(log_rets)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 yaml_path = os.path.join(base_dir, "../../config/params.yaml")
@@ -35,7 +25,7 @@ with open(yaml_path,"r") as f:
 
 data_set = params["jdm"]["data_set"]
 
-print(f"Loading data_set {yaml_path}")
+print(f"Loading data_set at {yaml_path}")
 
 df = pd.read_csv(
     f"../../{data_set}",
@@ -43,11 +33,12 @@ df = pd.read_csv(
     index_col="Open time"
 )
 
-close = df["Close"]
-mu, sigma = estimate_gbm_params(close)
+close_1m = df["Close"]
+close_5m = close_1m.resample("5min").last().dropna()
 
-with open(yaml_path,"r") as f:
-    params = yaml.safe_load(f)
+mu, sigma, n = estimate_gbm_params(close_5m, freq_seconds=params["jdm"]["bar_seconds"])
+
+print(f"Estimated from {n:,} 5-min returns.")
 
 params["jdm"]["mu"] = float(mu)
 params["jdm"]["sigma"] = float(sigma)
@@ -57,4 +48,4 @@ print(f"Writing drift={round(mu,7)} and volatility={round(sigma,5)} to config fi
 with open(yaml_path,"w") as f:
     yaml.dump(params, f)
 
-print("Completed Successfully")
+print("Written to params.yaml successfully")
