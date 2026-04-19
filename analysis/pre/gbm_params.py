@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 def estimate_gbm_params(series, freq_seconds=60):
-    if freq_seconds > 60:
+    if freq_seconds != 60:
         series = series.resample(f"{freq_seconds}s").last().dropna()
 
     log_rets = np.log(series / series.shift(1)).dropna()
@@ -34,11 +34,10 @@ df = pd.read_csv(
 )
 
 close_1m = df["Close"]
-close_5m = close_1m.resample("5min").last().dropna()
 
-mu, sigma, n = estimate_gbm_params(close_5m, freq_seconds=params["jdm"]["bar_seconds"])
+mu, sigma, n = estimate_gbm_params(close_1m, freq_seconds=params["jdm"]["bar_seconds"])
 
-print(f"Estimated from {n:,} 5-min returns.")
+print(f"Estimated from {n:,} returns at {params["jdm"]["bar_seconds"]}s bars.")
 
 params["jdm"]["mu"] = float(mu)
 params["jdm"]["sigma"] = float(sigma)

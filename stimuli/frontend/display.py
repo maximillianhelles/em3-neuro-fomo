@@ -37,7 +37,10 @@ class ExpInterface:
     def fix_cross(self, duration=params["exp"]["iti_duration"]):
         self.fixation_cross.draw()
         self.win.flip()
-        core.wait(duration)
+        keys = event.waitKeys(maxWait=duration, keyList=["escape"])
+        if keys and "escape" in keys:
+            self.win.close()
+            raise ExperimentAborted("Experiment aborted by experimenter during ITI.")
 
     def position_disclosure(self, position, capital, ticker):
         if position == "ASSET":
@@ -186,14 +189,12 @@ class ExpInterface:
                 display_base = values[0]
 
             if i-1 == jump_point:
-                if jump > 0:
-                    trigger_type.send(TriggerCode.SPIKE_POSITIVE)
-                else:
-                    trigger_type.send(TriggerCode.SPIKE_NEGATIVE)
+                code = TriggerCode.SPIKE_POSITIVE if jump > 0 else TriggerCode.SPIKE_NEGATIVE
+                self.win.callOnFlip(trigger_type.send, code)
 
             _draw_chart_frame(self, x_axis, y_axis, y_top_text,
-                               y_bottom_text, midline, price_line, margins, 
-                               values, i-1, position, display_base, portfolio_value)
+                               y_bottom_text, midline, price_line, margins,
+                               values, i, position, display_base, portfolio_value)
 
             escape = event.getKeys(keyList=["escape"])
             if escape:

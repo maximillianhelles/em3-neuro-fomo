@@ -1,6 +1,5 @@
 import yaml
 import os
-import serial
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 yaml_path = os.path.join(base_dir, "../config/params.yaml")
@@ -29,6 +28,7 @@ class DummyTrigger:
 
 class SerialTrigger:
     def __init__(self, port_name, baudrate=115200):
+        import serial
         self.port = serial.Serial(port_name, baudrate)
         print(f"[TTL] Serial port initialized at {port_name}")
 
@@ -43,14 +43,8 @@ def get_trigger_sender():
     if mode == "dummy":
         return DummyTrigger()
 
-    # Try serial first, fall back to parallel, then to dummy.
     if mode == "hardware":
         serial_port = params["exp"]["serial_port"]
-        try:
-            return SerialTrigger(serial_port)
-        except NotImplementedError:
-            pass
-        except Exception as e:
-            print(f"[TTL] Serial init failed ({e}); trying parallel.")
+        return SerialTrigger(serial_port)
 
     raise ValueError(f"Unknown trigger mode: {mode!r} (expected 'dummy' or 'hardware')")

@@ -10,7 +10,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir, ".."))
 sys.path.append(base_dir)
 
-from triggers import get_trigger_sender, TriggerCode
+from triggers import TriggerCode
 from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm, _load_params
 
 config_path = os.path.join(base_dir, "../config/params.yaml")
@@ -37,26 +37,29 @@ def get_participant_plan(master_plan, trials_per_condition):
             counts[combo] += 1
         if all(c == trials_per_condition for c in counts.values()):
             break
+
+    shortfalls = {combo: trials_per_condition - c for combo, c in counts.items() if c < trials_per_condition}
+    if shortfalls:
+        raise ValueError(
+            f"Master plan lacks enough trials for {trials_per_condition} per condition. "
+            f"Missing: {shortfalls}. Regenerate trial_plans.json with more trials."
+        )
     return selected
 
-def run_block(interface, subject_id, block_id, trials_per_condition):
+def run_block(interface, trigger, subject_id, block_id, trials_per_condition):
     # Determine intial capital
     capital_map = {"control": 1, "low": 50, "high": 100}
     if block_id not in capital_map:
         raise ValueError(f"{block_id} is an invalid block_id")
     capital = capital_map[block_id]
 
-    # Create new dataset
+    # Prepare dataset path (file is created on first trial write)
     csv_path = os.path.join(base_dir, f"../data/behavioral_data/{block_id}/{subject_id}_results_block.csv")
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
 
     fieldnames = ["participant_id", "block_id", "trial_num", "ticker",
-                "position", "direction", "jump_pct", "chart_values", "action_taken", "action_value",
-                "final_value", "valence", "arousal", "regret"]
-
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
+                "position", "final_position", "direction", "jump_pct", "chart_values",
+                "action_taken", "action_value", "final_value", "valence", "arousal", "regret"]
 
     master_plan = [tuple(t) for t in TRIAL_PLANS[block_id]]
     participant_plan = get_participant_plan(master_plan, trials_per_condition)
@@ -68,9 +71,9 @@ def run_block(interface, subject_id, block_id, trials_per_condition):
             Number of required unique tickers: {trials_per_condition*4}"""
             )
     
-    tickers = random.sample(config["exp"]["tickers"], len(participant_plan))
+    ticker_rng = random.Random(get_seed(block_id, 0))
+    tickers = ticker_rng.sample(config["exp"]["tickers"], len(participant_plan))
 
-    trigger = get_trigger_sender()
     trigger.send(TriggerCode.BLOCK_START)
 
     for (trial_num, position, direction), ticker in zip(participant_plan, tickers):
@@ -87,20 +90,25 @@ def run_block(interface, subject_id, block_id, trials_per_condition):
         values, jump, jump_point = jdm(init_value=capital, direction=direction, rng=rng)
         trigger.send(TriggerCode.TRIAL_START)
         action_taken, action_value = interface.chart_phase(values, position, jump, jump_point, trigger)
+        final_position = ("CASH" if position == "ASSET" else "ASSET") if action_taken[0] else position
 
         # SAM-rating
         trigger.send(TriggerCode.SAM_RATING)
         responses = interface.sam_rating()
 
-        # Append to behavioral data to CSV
+        # Append to behavioral data to CSV (write header on first trial)
+        write_header = not os.path.exists(csv_path)
         with open(csv_path, "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
+            if write_header:
+                writer.writeheader()
             writer.writerow({
                 "participant_id": subject_id,
                 "block_id": block_id,
                 "trial_num": trial_num,
                 "ticker": ticker,
                 "position": position,
+                "final_position": final_position,
                 "direction": direction,
                 "jump_pct": jump,
                 "chart_values": [round(v, 4) for v in values],
