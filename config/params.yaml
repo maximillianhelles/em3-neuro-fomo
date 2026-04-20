@@ -113,6 +113,7 @@ exp:
   trials_per_condition_eeg: 20
 
 jdm:
+
   bar_seconds: 300
   data_set: data/financial_data/BTCUSD_1m_2017-2025.csv
   mu: 3.820680061713355e-06
