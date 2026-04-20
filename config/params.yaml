@@ -8,54 +8,116 @@ exp:
   sell_key: s
   serial_port: /dev/tty.usbserial-DN2Q03LO
   tickers:
+  - ACFN
+  - AFQO
+  - AIAY
+  - ASRN
   - AXVQ
+  - BDQT
   - BLNT
+  - BPNW
+  - BQFX
+  - BTTD
+  - CBCQ
+  - CGCH
+  - CLLM
+  - CLPX
   - CRMW
+  - DMVW
   - DVOX
+  - ELKH
+  - ENKB
+  - ESEJ
   - EWKZ
+  - EYCE
+  - FDYO
+  - FIZQ
   - FLTB
+  - FPVA
+  - FQRZ
+  - GQCL
   - GSPN
+  - GTWL
+  - GYLW
+  - GYQP
+  - HCNP
+  - HQPD
   - HVRX
+  - IGFY
+  - IJVX
+  - IPFF
   - ITKM
+  - JBMW
   - JPLC
+  - JZGU
+  - KAFN
+  - KCRL
+  - KFZN
+  - KIWG
   - KZND
   - LBWT
+  - LDQP
+  - LFOS
+  - LKYZ
+  - LNDF
+  - LYWG
+  - MFKB
   - MNXQ
+  - MOGW
+  - MUUE
+  - MXTV
+  - NEXW
   - NVBK
+  - NWBZ
+  - NZJO
+  - OBZV
+  - OGPX
+  - OSEH
   - OXWM
   - PJLF
+  - PRGD
+  - QAHF
+  - QJJF
   - QRTN
   - RSTV
+  - SBFH
+  - SRZC
   - SWKZ
+  - TOUN
+  - TRXC
   - TXPN
+  - UKBJ
   - ULYB
+  - USIE
   - VMCQ
+  - VQWP
+  - VUFA
+  - WBGR
+  - WIRK
   - WJNX
+  - WPUS
+  - WVHB
+  - WYCM
   - XBLT
+  - XGPQ
+  - XLGG
+  - YICC
   - YKVP
+  - ZNZW
+  - ZPOT
+  - ZQOR
   - ZRWM
-  - ACFN
-  - BDQT
-  - CLPX
-  - DMVW
-  - ENKB
-  - FQRZ
-  - GTWL
-  - HCNP
-  - IJVX
-  - JBMW
-  - KCRL
-  - LDQP
-  - MXTV
-  - NWBZ
-  trials_per_condition: 1
+  - ZYWE
   trigger_mode: dummy
+  trials_per_condition_behavioral: 7
+  trials_per_condition_eeg: 20
+
 jdm:
 
   bar_seconds: 300
-  data_set: data/financial_data/btcusd_1-min_data.csv
-  mu: 6.235480524832378e-06
+  data_set: data/financial_data/BTCUSD_1m_2017-2025.csv
+  mu: 3.820680061713355e-06
   mu_jump: 0.09
   periods: 288
-  sigma: 0.00241835651687514
+  sigma: 0.002460122992542397
   sigma_jump: 0.01
