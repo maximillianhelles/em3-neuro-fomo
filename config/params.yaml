@@ -108,16 +108,13 @@ exp:
   - ZQOR
   - ZRWM
   - ZYWE
-  trigger_mode: dummy
   trials_per_condition_behavioral: 7
   trials_per_condition_eeg: 20
-
+  trigger_mode: dummy
 jdm:
-
   bar_seconds: 300
   data_set: data/financial_data/BTCUSD_1m_2017-2025.csv
-  mu: 3.820680061713355e-06
+  distributions_file: config/jdm_distributions.json
   mu_jump: 0.09
   periods: 288
-  sigma: 0.002460122992542397
   sigma_jump: 0.01

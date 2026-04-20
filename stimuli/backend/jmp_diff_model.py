@@ -1,29 +1,39 @@
 import yaml
+import json
 import numpy as np
 import os
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 yaml_path = os.path.join(base_dir, "../../config/params.yaml")
 
-def _load_params(path):
-    with open(path, "r") as f:
-        return yaml.safe_load(f)
+def _load_params():
+    with open(yaml_path, "r") as f:
+        params = yaml.safe_load(f)["jdm"]
+
+    dist_path = os.path.join(base_dir, "../..", params["distributions_file"])
+    with open(dist_path, "r") as f:
+        distributions = json.load(f)
+
+    params["mu_distribution"] = distributions["mu"]
+    params["sigma_distribution"] = distributions["sigma"]
+    return params
 
 def calc_jdm_values(init_value=100, direction=1, rng=None, **overrides):
-    
     if rng is None:
         rng = np.random.default_rng()
     
     # Initialize parameters
-    p = _load_params(yaml_path)
-    drift = overrides.get("drift", p["jdm"]["mu"])
-    volatility = overrides.get("volatility", p["jdm"]["sigma"])
-    periods = overrides.get("periods", p["jdm"]["periods"])
-    jump = overrides.get("jump", p["jdm"]["mu_jump"])
-    std_jump = overrides.get("std_jump", p["jdm"]["sigma_jump"])
-    
+    p = _load_params()
+    periods = overrides.get("periods", p["periods"])
+    jump = overrides.get("jump", p["mu_jump"])
+    std_jump = overrides.get("std_jump", p["sigma_jump"])
+
+    idx = int(rng.integers(len(p["mu_distribution"])))
+    drift = overrides.get("drift", p["mu_distribution"][idx])
+    volatility = overrides.get("volatility", p["sigma_distribution"][idx])
+
     # GBM calculation
-    shocks = rng.normal(drift, volatility, periods) # No ito correction since mu is already based on ito corrected log returns
+    shocks = rng.normal(drift, volatility, periods)
     gbm_values = init_value * np.exp(np.cumsum(shocks))
     gbm_values = np.insert(gbm_values, 0, init_value).tolist()
 
