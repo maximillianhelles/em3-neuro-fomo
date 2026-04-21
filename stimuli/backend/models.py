@@ -28,7 +28,7 @@ def calc_jdm_values(init_value=100, direction=1, rng=None, **overrides):
         rng = np.random.default_rng()
     
     # Initialize parameters
-    p = _load_params()
+    p = _load_jdm_params()
     periods = overrides.get("periods", p["periods"])
     jump = overrides.get("jump", p["mu_jump"])
     std_jump = overrides.get("std_jump", p["sigma_jump"])
@@ -78,5 +78,5 @@ def get_btc_segment(windows, init_value=100):
     segment = init_value * np.exp(np.cumsum(log_rets))
     return np.insert(segment, 0, init_value).tolist()
 
-data_set_path = os.path.join(base_dir, "../..", _load_jdm_params()["data_set"])
-windows = load_and_window(data_set_path, freq_seconds=300)
+# data_set_path = os.path.join(base_dir, "../..", _load_jdm_params()["data_set"])
+# windows = load_and_window(data_set_path, freq_seconds=300)
