@@ -19,10 +19,9 @@ if len(all_data) == 0:
     print(f"No data found for participant {participant_id}")
 else:
     combined_df = pd.concat(all_data, ignore_index=True)
-    winning_trial = combined_df.sample(n=1).iloc[0]
+    winning_trial = combined_df.nsmallest(1, "final_value").iloc[0]
     final_value = winning_trial["final_value"]
 
-    # 7. Print the official payout receipt!
     print("PAYOUT DRAW")
     print(f"Participant    : {participant_id}")
     print(f"PAYOUT: {round(final_value, 2)} DKK")
