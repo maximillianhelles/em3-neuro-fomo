@@ -40,7 +40,7 @@ class ExpInterface:
         keys = event.waitKeys(maxWait=duration, keyList=["escape"])
         if keys and "escape" in keys:
             self.win.close()
-            raise ExperimentAborted("Experiment aborted by experimenter during ITI.")
+            raise ExperimentAborted("Experiment aborted by participant during ITI.")
 
     def show_instructions(self):
         text = (
@@ -66,7 +66,7 @@ class ExpInterface:
         keys = event.waitKeys(keyList=["space", "escape"])
         if "escape" in keys:
             self.win.close()
-            raise ExperimentAborted("Experiment aborted by experimenter during instructions.")
+            raise ExperimentAborted("Experiment aborted by participant during instructions.")
 
     def show_practice_end(self):
         text = (
@@ -82,7 +82,7 @@ class ExpInterface:
         keys = event.waitKeys(keyList=["space", "escape"])
         if "escape" in keys:
             self.win.close()
-            raise ExperimentAborted("Experiment aborted by experimenter during practice end screen.")
+            raise ExperimentAborted("Experiment aborted by participant during practice end screen.")
 
     def position_disclosure(self, position, capital, ticker):
         if capital > 1:
@@ -107,7 +107,7 @@ class ExpInterface:
         keys = event.waitKeys(keyList=["return", "escape"])
         if "escape" in keys:
             self.win.close()
-            raise ExperimentAborted("Experiment aborted by experimenter during position disclosure.")
+            raise ExperimentAborted("Experiment aborted by participant during position disclosure.")
     
     def chart_phase(self, values, position, jump, jump_point, trigger_type, capital):
         observe = capital <= 1
@@ -256,7 +256,7 @@ class ExpInterface:
             escape = event.getKeys(keyList=["escape"])
             if escape:
                 self.win.close()
-                raise ExperimentAborted("Experiment aborted by experimenter during chart phase.")
+                raise ExperimentAborted("Experiment aborted by participant during chart phase.")
 
             if not observe:
                 if position == "ASSET":
@@ -296,7 +296,7 @@ class ExpInterface:
             keys = event.waitKeys(keyList=["1","2","3","4","5","6","7","8","9","escape"])
             if "escape" in keys:
                 self.win.close()
-                raise ExperimentAborted("Experiment aborted by experimenter during SAM rating.")
+                raise ExperimentAborted("Experiment aborted by participant during SAM rating.")
             responses[label] = int(keys[0])
         
         return responses
