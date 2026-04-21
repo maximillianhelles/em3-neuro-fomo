@@ -52,7 +52,8 @@ while True:
             try:
                 trials_per_condition = int(input("Enter an integer: ").strip())
                 if trials_per_condition > int(len(params["exp"]["tickers"])/4):
-                    print(f"""Current master plan only allows for a maximum of {int(len(params["exp"]["tickers"])/4)} trials per condition. Try again.""")
+                    print(f"""Current master plan only allows for a maximum of 
+                          {int(len(params["exp"]["tickers"])/4)} trials per condition. Try again.""")
                     continue
                 break
             except ValueError:
@@ -70,6 +71,8 @@ try:
     exp_interface.show_practice_end()
     for block in blocks:
         run_block(exp_interface, trigger, subject_id, block, trials_per_condition)
+    if participant_type != "eeg":
+        pass # Lav stimuli validation
 
     exp_interface.win.close()
 except ExperimentAborted as e:
