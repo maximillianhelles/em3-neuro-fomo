@@ -11,12 +11,13 @@ sys.path.append(os.path.join(base_dir, ".."))
 sys.path.append(base_dir)
 
 from triggers import TriggerCode
-from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm, _load_params
+from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm
 
 config_path = os.path.join(base_dir, "../config/params.yaml")
 trial_plans_path = os.path.join(base_dir, "../config/trial_plans.json")
 
-config = _load_params(config_path)
+with open(config_path, "r") as f:
+    config = yaml.safe_load(f)
 
 with open(trial_plans_path, "r") as f:
     TRIAL_PLANS = json.load(f)
@@ -89,7 +90,7 @@ def run_block(interface, trigger, subject_id, block_id, trials_per_condition):
         rng = np.random.default_rng(get_seed(block_id, trial_num))
         values, jump, jump_point = jdm(init_value=capital, direction=direction, rng=rng)
         trigger.send(TriggerCode.TRIAL_START)
-        action_taken, action_value = interface.chart_phase(values, position, jump, jump_point, trigger)
+        action_taken, action_value = interface.chart_phase(values, position, jump, jump_point, trigger, capital)
         final_position = ("CASH" if position == "ASSET" else "ASSET") if action_taken[0] else position
 
         # SAM-rating
