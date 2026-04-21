@@ -85,18 +85,23 @@ class ExpInterface:
             raise ExperimentAborted("Experiment aborted by experimenter during practice end screen.")
 
     def position_disclosure(self, position, capital, ticker):
-        if position == "ASSET":
-            description = visual.TextStim(win=self.win, text=(
-                                            f"You own {capital} DKK of this asset: {ticker} \n \n"
-                                            f"To sell it at any given time, press [{params['exp']['sell_key']}]\n \n"
-                                            f"To proceed, press Enter"
-                                            ), pos=(0, 0), color="#FFFFFF")
+        if capital > 1:
+            if position == "ASSET":
+                text = (f"You own {capital} DKK of this asset: {ticker} \n \n"
+                        f"To sell it at any given time, press [{params['exp']['sell_key']}]\n \n"
+                        f"To proceed, press Enter")
+            else:
+                text = (f"You have {capital} DKK in cash. \n \n"
+                        f"To buy the asset {ticker} at any given time, press [{params['exp']['buy_key']}]\n \n"
+                        f"To proceed, press Enter")
         else:
-            description = visual.TextStim(win=self.win, text=(
-                                            f"You have {capital} DKK in cash. \n \n"
-                                            f"To buy the asset {ticker} at any given time, press [{params['exp']['buy_key']}]\n \n"
-                                            f"To proceed, press Enter"
-                                            ), pos=(0, 0), color="#FFFFFF")
+            if position == "ASSET":
+                text = (f"Observe this asset as if you owned it: {ticker} \n \n"
+                        f"To proceed, press Enter")
+            else:
+                text = (f"Observe this asset as if you were holding cash instead: {ticker} \n \n"
+                        f"To proceed, press Enter")
+        description = visual.TextStim(win=self.win, text=text, pos=(0, 0), color="#FFFFFF")
         description.draw()
         self.win.flip()
         keys = event.waitKeys(keyList=["return", "escape"])
@@ -104,7 +109,9 @@ class ExpInterface:
             self.win.close()
             raise ExperimentAborted("Experiment aborted by experimenter during position disclosure.")
     
-    def chart_phase(self, values, position, jump, jump_point, trigger_type):
+    def chart_phase(self, values, position, jump, jump_point, trigger_type, capital):
+        observe = capital <= 1
+
         # Chart Margins
         margins = {
             "left": -1 + 2*0.1,
@@ -143,37 +150,45 @@ class ExpInterface:
             text_offset_y = margins["bottom"]-0.2
             num_offset_y = margins["bottom"]-0.3
 
-            if value > round(init_value, 2):
+            if observe:
+                num_color = self.default_color
+            elif value > round(init_value, 2):
                     num_color = "green"
             elif value < round(init_value, 2):
                     num_color = "red"
             else:
-                    num_color = self.default_color 
+                    num_color = self.default_color
 
             if position == "ASSET":
-                description_invested = visual.TextStim(win=self.win, text="Asset Value:", 
+                asset_label = "Asset (nominal):" if observe else "Asset Value:"
+                cash_label = "Cash (nominal)" if observe else "What if: Cash Value"
+
+                description_invested = visual.TextStim(win=self.win, text=asset_label,
                                                 pos=(left_x, text_offset_y), color="#FFFFFF")
 
-                portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)), 
+                portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)),
                                                 pos=(left_x, num_offset_y), color=num_color)
-                
-                cash_description = visual.TextStim(win=self.win, text="What if: Cash Value", 
+
+                cash_description = visual.TextStim(win=self.win, text=cash_label,
                                     pos=(right_x, text_offset_y), color="#FFFFFF")
-                
-                cash = visual.TextStim(win=self.win, text=str(round(init_value,2)), 
+
+                cash = visual.TextStim(win=self.win, text=str(round(init_value,2)),
                                     pos=(right_x, num_offset_y), color=self.default_color)
-                
+
             else:
-                cash_description = visual.TextStim(win=self.win, text="Cash Value", 
+                cash_label = "Cash (nominal)" if observe else "Cash Value"
+                asset_label = "Asset (nominal)" if observe else "What if: Asset Value"
+
+                cash_description = visual.TextStim(win=self.win, text=cash_label,
                                     pos=(left_x, text_offset_y), color="#FFFFFF")
-                
-                cash = visual.TextStim(win=self.win, text=str(round(init_value,2)), 
+
+                cash = visual.TextStim(win=self.win, text=str(round(init_value,2)),
                                     pos=(left_x, num_offset_y), color=self.default_color)
-                
-                description_invested = visual.TextStim(win=self.win, text="What if: Asset Value", 
+
+                description_invested = visual.TextStim(win=self.win, text=asset_label,
                                                 pos=(right_x, text_offset_y), color="#FFFFFF")
-                
-                portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)), 
+
+                portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)),
                                                 pos=(right_x, num_offset_y), color=num_color)
                 
             return description_invested, portfolio, cash_description, cash
@@ -243,20 +258,21 @@ class ExpInterface:
                 self.win.close()
                 raise ExperimentAborted("Experiment aborted by experimenter during chart phase.")
 
-            if position == "ASSET":
-                key = event.getKeys(keyList=[params["exp"]["sell_key"]])
-                if key and not action_taken[0]:
-                    action_value = values[i-1]
-                    position = "CASH"
-                    action_taken = (True, "SELL")
-                    trigger_type.send(TriggerCode.SELL_ACTION)
-            else:
-                key = event.getKeys(keyList=[params["exp"]["buy_key"]])
-                if key and not action_taken[0]:
-                    action_value = values[i-1]
-                    position = "ASSET"
-                    action_taken = (True, "BUY")
-                    trigger_type.send(TriggerCode.BUY_ACTION)
+            if not observe:
+                if position == "ASSET":
+                    key = event.getKeys(keyList=[params["exp"]["sell_key"]])
+                    if key and not action_taken[0]:
+                        action_value = values[i-1]
+                        position = "CASH"
+                        action_taken = (True, "SELL")
+                        trigger_type.send(TriggerCode.SELL_ACTION)
+                else:
+                    key = event.getKeys(keyList=[params["exp"]["buy_key"]])
+                    if key and not action_taken[0]:
+                        action_value = values[i-1]
+                        position = "ASSET"
+                        action_taken = (True, "BUY")
+                        trigger_type.send(TriggerCode.BUY_ACTION)
 
             core.wait(1.0) if i == len(values) else core.wait(0.025)
         
