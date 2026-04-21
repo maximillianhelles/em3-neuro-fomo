@@ -1,5 +1,6 @@
 import yaml
 import json
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 
@@ -51,3 +52,17 @@ def calc_jdm_values(init_value=100, direction=1, rng=None, **overrides):
     total_values = pre_values + post_values.tolist()
 
     return total_values, direction*pct_jump, jump_point
+
+def calc_jdm_values(init_value=100, rng=None, **overrides):
+    rng = np.random.default_rng(rng)
+    p = _load_params()
+    periods = overrides.get("periods", p["periods"])
+
+    idx = rng.integers(len(p["mu_distribution"]))
+    drift = overrides.get("drift", p["mu_distribution"][idx])
+    volatility = overrides.get("volatility", p["sigma_distribution"][idx])
+
+    shocks = rng.normal(drift, volatility, periods)
+    gbm_values = init_value * np.exp(np.cumsum(shocks))
+    
+    return np.insert(gbm_values, 0, init_value).tolist()
