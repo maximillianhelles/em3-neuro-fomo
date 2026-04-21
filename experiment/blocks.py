@@ -23,7 +23,7 @@ with open(trial_plans_path, "r") as f:
     TRIAL_PLANS = json.load(f)
 
 def get_seed(block_id, trial_num):
-    block_offset = {"control": 0, "low": 10000, "high": 20000}
+    block_offset = {"control": 0, "low": 10000, "high": 20000, "practice": 30000}
     return block_offset[block_id] + trial_num
 
 def get_participant_plan(master_plan, trials_per_condition):
@@ -47,16 +47,17 @@ def get_participant_plan(master_plan, trials_per_condition):
         )
     return selected
 
-def run_block(interface, trigger, subject_id, block_id, trials_per_condition):
+def run_block(interface, trigger, subject_id, block_id, trials_per_condition, save_data=True):
     # Determine intial capital
-    capital_map = {"control": 1, "low": 50, "high": 100}
+    capital_map = {"control": 1, "low": 50, "high": 100, "practice": 1}
     if block_id not in capital_map:
         raise ValueError(f"{block_id} is an invalid block_id")
     capital = capital_map[block_id]
 
-    # Prepare dataset path (file is created on first trial write)
-    csv_path = os.path.join(base_dir, f"../data/behavioral_data/{block_id}/{subject_id}_results_block.csv")
-    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    if save_data:
+        # Prepare dataset path (file is created on first trial write)
+        csv_path = os.path.join(base_dir, f"../data/behavioral_data/{block_id}/{subject_id}_results_block.csv")
+        os.makedirs(os.path.dirname(csv_path), exist_ok=True)
 
     fieldnames = ["participant_id", "block_id", "trial_num", "ticker",
                 "position", "final_position", "direction", "jump_pct", "chart_values",
@@ -97,29 +98,29 @@ def run_block(interface, trigger, subject_id, block_id, trials_per_condition):
         trigger.send(TriggerCode.SAM_RATING)
         responses = interface.sam_rating()
 
-        # Append to behavioral data to CSV (write header on first trial)
-        write_header = not os.path.exists(csv_path)
-        with open(csv_path, "a", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            if write_header:
-                writer.writeheader()
-            writer.writerow({
-                "participant_id": subject_id,
-                "block_id": block_id,
-                "trial_num": trial_num,
-                "ticker": ticker,
-                "position": position,
-                "final_position": final_position,
-                "direction": direction,
-                "jump_pct": jump,
-                "chart_values": [round(v, 4) for v in values],
-                "action_taken": action_taken,
-                "action_value": action_value,
-                "final_value": values[-1],
-                "valence": responses["valence"],
-                "arousal": responses["arousal"],
-                "regret": responses["regret"],
-            })
+        if save_data:
+            write_header = not os.path.exists(csv_path)
+            with open(csv_path, "a", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                if write_header:
+                    writer.writeheader()
+                writer.writerow({
+                    "participant_id": subject_id,
+                    "block_id": block_id,
+                    "trial_num": trial_num,
+                    "ticker": ticker,
+                    "position": position,
+                    "final_position": final_position,
+                    "direction": direction,
+                    "jump_pct": jump,
+                    "chart_values": [round(v, 4) for v in values],
+                    "action_taken": action_taken,
+                    "action_value": action_value,
+                    "final_value": values[-1],
+                    "valence": responses["valence"],
+                    "arousal": responses["arousal"],
+                    "regret": responses["regret"],
+                })
 
         # Fix Cross
         trigger.send(TriggerCode.TRIAL_END)
