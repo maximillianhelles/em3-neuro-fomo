@@ -1,13 +1,17 @@
 import yaml
 import json
-import matplotlib.pyplot as plt
 import numpy as np
 import os
+import sys
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(base_dir, "../.."))
+
+from analysis.pre.gbm_params import load_and_window
+
 yaml_path = os.path.join(base_dir, "../../config/params.yaml")
 
-def _load_params():
+def _load_jdm_params():
     with open(yaml_path, "r") as f:
         params = yaml.safe_load(f)["jdm"]
 
@@ -53,16 +57,26 @@ def calc_jdm_values(init_value=100, direction=1, rng=None, **overrides):
 
     return total_values, direction*pct_jump, jump_point
 
-def calc_jdm_values(init_value=100, rng=None, **overrides):
-    rng = np.random.default_rng(rng)
-    p = _load_params()
-    periods = overrides.get("periods", p["periods"])
+def get_gbm_segment(init_value=100):
+    p = _load_jdm_params()
+    periods = p["periods"]
 
-    idx = rng.integers(len(p["mu_distribution"]))
-    drift = overrides.get("drift", p["mu_distribution"][idx])
-    volatility = overrides.get("volatility", p["sigma_distribution"][idx])
+    idx = np.random.randint(len(p["mu_distribution"]))
+    drift = p["mu_distribution"][idx]
+    volatility = p["sigma_distribution"][idx]
 
-    shocks = rng.normal(drift, volatility, periods)
+    shocks = np.random.normal(drift, volatility, periods)
     gbm_values = init_value * np.exp(np.cumsum(shocks))
     
     return np.insert(gbm_values, 0, init_value).tolist()
+
+def get_btc_segment(windows, init_value=100):
+    windows = np.asarray(windows)
+    idx = np.random.randint(len(windows))
+    prices = windows[idx]
+    log_rets = np.log(prices[1:] / prices[:-1])
+    segment = init_value * np.exp(np.cumsum(log_rets))
+    return np.insert(segment, 0, init_value).tolist()
+
+data_set_path = os.path.join(base_dir, "../..", _load_jdm_params()["data_set"])
+windows = load_and_window(data_set_path, freq_seconds=300)

@@ -64,37 +64,37 @@ def est_gbm_params(price_windows, max_bar_threshold=0.015):
 
     return window_mus.tolist(), window_sigmas.tolist()
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-yaml_path = os.path.join(base_dir, "../../config/params.yaml")
-dist_path = os.path.join(base_dir, "../../config/jdm_distributions.json")
+if __name__ == "__main__":
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    yaml_path = os.path.join(base_dir, "../../config/params.yaml")
+    dist_path = os.path.join(base_dir, "../../config/jdm_distributions.json")
 
-with open(yaml_path,"r") as f:
-    params = yaml.safe_load(f)
+    with open(yaml_path,"r") as f:
+        params = yaml.safe_load(f)
 
-data_set = params["jdm"]["data_set"]
+    data_set = params["jdm"]["data_set"]
 
-print(f"Loading {data_set} ...")
-price_windows = load_and_window(
-    os.path.join(base_dir, "../..", data_set),
-    freq_seconds=params["jdm"]["bar_seconds"],
-)
+    print(f"Loading {data_set} ...")
+    price_windows = load_and_window(
+        os.path.join(base_dir, "../..", data_set),
+        freq_seconds=params["jdm"]["bar_seconds"],
+    )
 
-window_mus, window_sigmas = est_gbm_params(price_windows)
+    window_mus, window_sigmas = est_gbm_params(price_windows)
 
-print(f"\nEstimated from {len(window_mus):,} windows.")
-print(
-    f"  sigma: mean={np.mean(window_sigmas):.4f}, "
-    f"range=[{min(window_sigmas):.4f}, {max(window_sigmas):.4f}]"
-)
+    print(f"\nEstimated from {len(window_mus):,} windows.")
+    print(
+        f"  sigma: mean={np.mean(window_sigmas):.4f}, "
+        f"range=[{min(window_sigmas):.4f}, {max(window_sigmas):.4f}]"
+    )
 
-dist_path = os.path.join(base_dir, "../../config/jdm_distributions.json")
-with open(dist_path, "w") as f:
-    json.dump({"mu": window_mus, "sigma": window_sigmas}, f, indent=1)
+    with open(dist_path, "w") as f:
+        json.dump({"mu": window_mus, "sigma": window_sigmas}, f, indent=1)
 
-params["jdm"]["distributions_file"] = "config/jdm_distributions.json"
+    params["jdm"]["distributions_file"] = "config/jdm_distributions.json"
 
-with open(yaml_path, "w") as f:
-    yaml.dump(params, f)
+    with open(yaml_path, "w") as f:
+        yaml.dump(params, f)
 
-print(f"\nDistributions → {dist_path}")
-print(f"Config updated → {yaml_path}")
+    print(f"\nDistributions → {dist_path}")
+    print(f"Config updated → {yaml_path}")
