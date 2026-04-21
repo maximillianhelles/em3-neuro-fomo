@@ -37,8 +37,9 @@ class SerialTrigger:
         print(f"[TTL] Trigger sent: {code}")
 
 
-def get_trigger_sender():
-    mode = params["exp"]["trigger_mode"]
+def get_trigger_sender(mode=None):
+    if mode is None:
+        mode = params["exp"]["trigger_mode"]
 
     if mode == "dummy":
         return DummyTrigger()
