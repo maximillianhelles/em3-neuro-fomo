@@ -19,7 +19,8 @@ if len(all_data) == 0:
     print(f"No data found for participant {participant_id}")
 else:
     combined_df = pd.concat(all_data, ignore_index=True)
-    winning_trial = combined_df.nsmallest(1, "final_value").iloc[0]
+    eligible = combined_df[combined_df["block_id"] != "control"]
+    winning_trial = eligible.nsmallest(1, "final_value").iloc[0]
     final_value = winning_trial["final_value"]
 
     print("PAYOUT DRAW")
