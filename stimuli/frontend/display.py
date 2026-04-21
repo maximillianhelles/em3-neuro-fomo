@@ -42,6 +42,48 @@ class ExpInterface:
             self.win.close()
             raise ExperimentAborted("Experiment aborted by experimenter during ITI.")
 
+    def show_instructions(self):
+        text = (
+            "In this experiment, you will watch live stock market charts.\n"
+            "At the start of each trial, you will be told if your starting position is\n"
+            "holding an ASSET or holding CASH.\n\n"
+            "As you watch the price update on the screen, you can choose to take action:\n"
+            "  •  If you hold CASH, press 'B' to BUY the asset.\n"
+            "  •  If you hold the ASSET, press 'S' to SELL the asset.\n\n"
+            "After the price finishes moving, you will be asked to rate your emotional\n"
+            "response to the outcome.\n\n"
+            "Your choices matter: At the end of the experiment, one random trial will be\n"
+            "drawn. The final value of your portfolio from that specific trial will be\n"
+            "paid out to you as a real cash bonus!\n\n"
+            "We will begin with 4 practice trials so you can get used to the system.\n"
+            "No real money is on the line yet.\n\n"
+            "Press the SPACEBAR when you are ready to start practicing."
+        )
+        stim = visual.TextStim(win=self.win, text=text, pos=(0, 0), color="#FFFFFF",
+                               height=0.065, wrapWidth=1.8, alignText="left")
+        stim.draw()
+        self.win.flip()
+        keys = event.waitKeys(keyList=["space", "escape"])
+        if "escape" in keys:
+            self.win.close()
+            raise ExperimentAborted("Experiment aborted by experimenter during instructions.")
+
+    def show_practice_end(self):
+        text = (
+            "The practice trials are now over.\n\n"
+            "The real experiment is about to begin.\n"
+            "From here on, your choices count towards your cash bonus.\n\n"
+            "Press the SPACEBAR when you are ready to start."
+        )
+        stim = visual.TextStim(win=self.win, text=text, pos=(0, 0), color="#FFFFFF",
+                               height=0.065, wrapWidth=1.8, alignText="left")
+        stim.draw()
+        self.win.flip()
+        keys = event.waitKeys(keyList=["space", "escape"])
+        if "escape" in keys:
+            self.win.close()
+            raise ExperimentAborted("Experiment aborted by experimenter during practice end screen.")
+
     def position_disclosure(self, position, capital, ticker):
         if position == "ASSET":
             description = visual.TextStim(win=self.win, text=(

@@ -210,4 +210,4 @@ __marimo__/
 .DS_Store
 
 #Data
-Data/financial_data/
+Data/financial_data/.vscode/

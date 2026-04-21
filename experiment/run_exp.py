@@ -65,6 +65,9 @@ exp_interface = ExpInterface(fullscr=fullscr)
 trigger = get_trigger_sender()
 
 try:
+    exp_interface.show_instructions()
+    run_block(exp_interface, trigger, subject_id, "practice", 1, save_data=False)
+    exp_interface.show_practice_end()
     for block in blocks:
         run_block(exp_interface, trigger, subject_id, block, trials_per_condition)
 
