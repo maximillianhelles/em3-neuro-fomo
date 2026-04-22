@@ -82,12 +82,12 @@ try:
     trigger_mode = "hardware" if participant_type == "eeg" else "dummy"
     trigger = get_trigger_sender(mode=trigger_mode)
 
-    # exp_interface.show_instructions()
-    # run_block(exp_interface, trigger, subject_id, "practice", 1, save_data=False)
-    # exp_interface.show_practice_end()
+    exp_interface.show_instructions()
+    run_block(exp_interface, trigger, subject_id, "practice", 1, save_data=False)
+    exp_interface.show_practice_end()
 
-    # for block in blocks:
-    #     run_block(exp_interface, trigger, subject_id, block, trials_per_condition)
+    for block in blocks:
+        run_block(exp_interface, trigger, subject_id, block, trials_per_condition)
 
     if participant_type != "eeg":
         results = exp_interface.stimuli_validation_phase(
