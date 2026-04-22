@@ -108,7 +108,7 @@ exp:
   - ZQOR
   - ZRWM
   - ZYWE
-  trials_per_condition_behavioral: 7
+  trials_per_condition_behavioral: 6
   trials_per_condition_eeg: 20
   trigger_mode: dummy
 jdm:
