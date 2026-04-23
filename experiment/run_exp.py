@@ -69,19 +69,18 @@ def get_trials_per_condition():
             print("Invalid type. Enter 'behavioral', 'eeg', or 'custom'.")
     return participant_type, trials_per_condition
 
-fullscr = get_exp_type()
-
-exp_interface = ExpInterface(fullscr=fullscr)
-
 data_set_path = os.path.join(base_dir, "..", params["jdm"]["data_set"])
 windows = load_and_window(data_set_path, freq_seconds=params["jdm"]["bar_seconds"])
 
 try:
+    fullscr = get_exp_type()
     subject_id = get_subject_id()
     participant_type, trials_per_condition = get_trials_per_condition()
+    
     trigger_mode = "hardware" if participant_type == "eeg" else "dummy"
     trigger = get_trigger_sender(mode=trigger_mode)
 
+    exp_interface = ExpInterface(fullscr=fullscr)
     exp_interface.show_instructions()
     run_block(exp_interface, trigger, subject_id, "practice", 1, save_data=False)
     exp_interface.show_practice_end()
