@@ -28,7 +28,7 @@ class ExpInterface:
             self.win = visual.Window(fullscr=True, color=self.b_col, units="norm")
             self.win_width, self.win_height = self.win.size
         else:
-            self.win_width, self.win_height = 1470, 956 # Mid-screen = 0,0, x_left = -1
+            self.win_width, self.win_height = 800, 600 # Mid-screen = 0,0, x_left = -1
             self.win = visual.Window(size=[self.win_width, self.win_height], fullscr=False, color=self.b_col, units="norm")
 
         self.fixation_cross = visual.TextStim(text="+", win=self.win, color="white", height=0.2)
