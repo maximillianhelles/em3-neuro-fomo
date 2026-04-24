@@ -11,12 +11,13 @@ sys.path.append(os.path.join(base_dir, ".."))
 sys.path.append(base_dir)
 
 from triggers import TriggerCode
-from stimuli.backend.jmp_diff_model import calc_jdm_values as jdm, _load_params
+from stimuli.backend.models import calc_jdm_values as jdm
 
 config_path = os.path.join(base_dir, "../config/params.yaml")
 trial_plans_path = os.path.join(base_dir, "../config/trial_plans.json")
 
-config = _load_params(config_path)
+with open(config_path, "r") as f:
+    config = yaml.safe_load(f)
 
 with open(trial_plans_path, "r") as f:
     TRIAL_PLANS = json.load(f)

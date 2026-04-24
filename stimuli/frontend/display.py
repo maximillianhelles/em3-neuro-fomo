@@ -11,6 +11,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir, ".."))
 
 from experiment.triggers import TriggerCode
+from stimuli.backend.models import get_gbm_segment, get_btc_segment
 
 config_path = os.path.join(base_dir, "../../config/params.yaml") 
 
@@ -40,7 +41,7 @@ class ExpInterface:
         keys = event.waitKeys(maxWait=duration, keyList=["escape"])
         if keys and "escape" in keys:
             self.win.close()
-            raise ExperimentAborted("Experiment aborted by experimenter during ITI.")
+            raise ExperimentAborted("Experiment aborted by participant during ITI.")
 
     def show_instructions(self):
         text = (
@@ -66,7 +67,7 @@ class ExpInterface:
         keys = event.waitKeys(keyList=["space", "escape"])
         if "escape" in keys:
             self.win.close()
-            raise ExperimentAborted("Experiment aborted by experimenter during instructions.")
+            raise ExperimentAborted("Experiment aborted by participant during instructions.")
 
     def show_practice_end(self):
         text = (
@@ -82,27 +83,24 @@ class ExpInterface:
         keys = event.waitKeys(keyList=["space", "escape"])
         if "escape" in keys:
             self.win.close()
-            raise ExperimentAborted("Experiment aborted by experimenter during practice end screen.")
+            raise ExperimentAborted("Experiment aborted by participant during practice end screen.")
 
     def position_disclosure(self, position, capital, ticker):
         if position == "ASSET":
-            description = visual.TextStim(win=self.win, text=(
-                                            f"You own {capital} DKK of this asset: {ticker} \n \n"
-                                            f"To sell it at any given time, press [{params['exp']['sell_key']}]\n \n"
-                                            f"To proceed, press Enter"
-                                            ), pos=(0, 0), color="#FFFFFF")
+            text = (f"You own {capital} DKK of this asset: {ticker} \n \n"
+                    f"To sell it at any given time, press [{params['exp']['sell_key']}]\n \n"
+                    f"To proceed, press Enter")
         else:
-            description = visual.TextStim(win=self.win, text=(
-                                            f"You have {capital} DKK in cash. \n \n"
-                                            f"To buy the asset {ticker} at any given time, press [{params['exp']['buy_key']}]\n \n"
-                                            f"To proceed, press Enter"
-                                            ), pos=(0, 0), color="#FFFFFF")
+            text = (f"You have {capital} DKK in cash. \n \n"
+                    f"To buy the asset {ticker} at any given time, press [{params['exp']['buy_key']}]\n \n"
+                    f"To proceed, press Enter")
+        description = visual.TextStim(win=self.win, text=text, pos=(0, 0), color="#FFFFFF")
         description.draw()
         self.win.flip()
         keys = event.waitKeys(keyList=["return", "escape"])
         if "escape" in keys:
             self.win.close()
-            raise ExperimentAborted("Experiment aborted by experimenter during position disclosure.")
+            raise ExperimentAborted("Experiment aborted by participant during position disclosure.")
     
     def chart_phase(self, values, position, jump, jump_point, trigger_type):
         # Chart Margins
@@ -144,36 +142,42 @@ class ExpInterface:
             num_offset_y = margins["bottom"]-0.3
 
             if value > round(init_value, 2):
-                    num_color = "green"
+                num_color = "green"
             elif value < round(init_value, 2):
-                    num_color = "red"
+                num_color = "red"
             else:
-                    num_color = self.default_color 
+                num_color = self.default_color
 
             if position == "ASSET":
-                description_invested = visual.TextStim(win=self.win, text="Asset Value:", 
+                asset_label = "Asset Value:"
+                cash_label = "What if: Cash Value"
+
+                description_invested = visual.TextStim(win=self.win, text=asset_label,
                                                 pos=(left_x, text_offset_y), color="#FFFFFF")
 
-                portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)), 
+                portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)),
                                                 pos=(left_x, num_offset_y), color=num_color)
-                
-                cash_description = visual.TextStim(win=self.win, text="What if: Cash Value", 
+
+                cash_description = visual.TextStim(win=self.win, text=cash_label,
                                     pos=(right_x, text_offset_y), color="#FFFFFF")
-                
-                cash = visual.TextStim(win=self.win, text=str(round(init_value,2)), 
+
+                cash = visual.TextStim(win=self.win, text=str(round(init_value,2)),
                                     pos=(right_x, num_offset_y), color=self.default_color)
-                
+
             else:
-                cash_description = visual.TextStim(win=self.win, text="Cash Value", 
+                cash_label = "Cash Value"
+                asset_label = "What if: Asset Value"
+
+                cash_description = visual.TextStim(win=self.win, text=cash_label,
                                     pos=(left_x, text_offset_y), color="#FFFFFF")
-                
-                cash = visual.TextStim(win=self.win, text=str(round(init_value,2)), 
+
+                cash = visual.TextStim(win=self.win, text=str(round(init_value,2)),
                                     pos=(left_x, num_offset_y), color=self.default_color)
-                
-                description_invested = visual.TextStim(win=self.win, text="What if: Asset Value", 
+
+                description_invested = visual.TextStim(win=self.win, text=asset_label,
                                                 pos=(right_x, text_offset_y), color="#FFFFFF")
-                
-                portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)), 
+
+                portfolio = visual.TextStim(win=self.win, text=str(round(value, 2)),
                                                 pos=(right_x, num_offset_y), color=num_color)
                 
             return description_invested, portfolio, cash_description, cash
@@ -241,7 +245,7 @@ class ExpInterface:
             escape = event.getKeys(keyList=["escape"])
             if escape:
                 self.win.close()
-                raise ExperimentAborted("Experiment aborted by experimenter during chart phase.")
+                raise ExperimentAborted("Experiment aborted by participant during chart phase.")
 
             if position == "ASSET":
                 key = event.getKeys(keyList=[params["exp"]["sell_key"]])
@@ -280,7 +284,139 @@ class ExpInterface:
             keys = event.waitKeys(keyList=["1","2","3","4","5","6","7","8","9","escape"])
             if "escape" in keys:
                 self.win.close()
-                raise ExperimentAborted("Experiment aborted by experimenter during SAM rating.")
+                raise ExperimentAborted("Experiment aborted by participant during SAM rating.")
             responses[label] = int(keys[0])
         
         return responses
+    
+    def stimuli_validation_phase(self, windows, subject_id, init_value=100, n_per_condition=10):
+        windows = np.asarray(windows)
+        if len(windows) < n_per_condition:
+            raise ValueError(
+                f"Need at least {n_per_condition} BTC windows, got {len(windows)}."
+            )
+
+        # 0 = model (GBM), 1 = data (BTC)
+        labels = np.array([0] * n_per_condition + [1] * n_per_condition)
+        np.random.shuffle(labels)
+
+        # Intro screen
+        intro_text = (
+            "REAL OR FAKE?\n\n"
+            f"You will see {2 * n_per_condition} price charts.\n"
+            "Some are real historical price data. Others are generated by our model.\n\n"
+            "After each chart, decide which it was:\n"
+            "  •  Press [1] if you think it was REAL\n"
+            "  •  Press [0] if you think it was FAKE\n\n"
+            "Press SPACE to begin."
+        )
+        intro = visual.TextStim(win=self.win, text=intro_text, pos=(0, 0), color="#FFFFFF",
+                                height=0.065, wrapWidth=1.8, alignText="left")
+        intro.draw()
+        self.win.flip()
+        keys = event.waitKeys(keyList=["space", "escape"])
+        if "escape" in keys:
+            self.win.close()
+            raise ExperimentAborted("Validation phase aborted at intro.")
+
+        results = {"subject_id": subject_id, "response": [], "truth": [], "correct": []}
+        used_btc = set()
+
+        margins = {
+            "left": -1 + 2*0.1,
+            "right": -1 + 2*0.9,
+            "bottom": -1 + 2*0.3,
+            "up": -1 + 2*0.85,
+        }
+        axis_colors = self.default_color
+
+        for trial_idx, label in enumerate(labels):
+            if label == 0:
+                values = get_gbm_segment(init_value=init_value)
+                truth = "model"
+            else:
+                available = [i for i in range(len(windows)) if i not in used_btc]
+                chosen = int(np.random.choice(available))
+                used_btc.add(chosen)
+                values = get_btc_segment([windows[chosen]], init_value=init_value)
+                truth = "data"
+
+            xs = np.linspace(margins["left"], margins["right"], len(values))
+            x_axis = visual.Line(self.win, start=(margins["left"], margins["bottom"]),
+                                 end=(margins["right"], margins["bottom"]),
+                                 lineColor=axis_colors, lineWidth=6)
+            y_axis = visual.Line(self.win, start=(margins["left"], margins["bottom"]),
+                                 end=(margins["left"], margins["up"]),
+                                 lineColor=axis_colors, lineWidth=6)
+            price_line = visual.ShapeStim(self.win, vertices=[(0, 0), (0, 0)], closeShape=False,
+                                          lineColor="#2196f3", fillColor=None, lineWidth=5)
+            midline = visual.Line(self.win, start=(margins["left"], 0),
+                                  end=(margins["right"], 0), lineColor="#6a7482", lineWidth=1)
+            y_top_text = visual.TextStim(win=self.win, text="",
+                                         pos=(margins["left"]-0.05, margins["up"]),
+                                         height=0.05, color=axis_colors)
+            y_bottom_text = visual.TextStim(win=self.win, text="",
+                                            pos=(margins["left"]-0.05, margins["bottom"]),
+                                            height=0.05, color=axis_colors)
+            title = visual.TextStim(win=self.win,
+                                    text=f"Chart {trial_idx + 1} of {2 * n_per_condition}",
+                                    pos=(0, 0.92), color="#FFFFFF", height=0.07)
+
+            n_frames = len(values)
+            tick_wait = max(0.015, 4.5 / max(n_frames - 1, 1))
+
+            def _draw(index):
+                visible = values[:index] if index > 0 else values[:1]
+                center = np.mean([np.max(visible), np.min(visible)])
+                half_range = max(center * 0.10, np.ptp(visible) * 0.6 + 1e-9)
+                bottom_y = center - half_range
+                top_y = center + half_range
+                ys_visible = np.interp(visible, (bottom_y, top_y), (margins["bottom"], margins["up"]))
+                y_mid_px = np.interp(values[0], (bottom_y, top_y), (margins["bottom"], margins["up"]))
+
+                y_top_text.text = f"{top_y:.1f}"
+                y_bottom_text.text = f"{bottom_y:.1f}"
+                midline.start = (margins["left"], y_mid_px)
+                midline.end = (margins["right"], y_mid_px)
+
+                title.draw()
+                x_axis.draw()
+                y_axis.draw()
+                y_top_text.draw()
+                y_bottom_text.draw()
+                midline.draw()
+                if index > 0:
+                    price_line.vertices = list(zip(xs[:index], ys_visible))
+                    price_line.draw()
+                self.win.flip()
+
+            _draw(0)
+            core.wait(0.3)
+            for i in range(2, n_frames + 1):
+                _draw(i)
+                if event.getKeys(keyList=["escape"]):
+                    self.win.close()
+                    raise ExperimentAborted("Validation phase aborted during chart.")
+                core.wait(tick_wait)
+            core.wait(0.4)
+
+            prompt = visual.TextStim(win=self.win,
+                                     text="Was that REAL or FAKE?\n\n[1] = REAL      [0] = FAKE",
+                                     pos=(0, 0), color="#FFFFFF", height=0.09,
+                                     alignText="center")
+            prompt.draw()
+            self.win.flip()
+            keys = event.waitKeys(keyList=["1", "0", "escape"])
+            if "escape" in keys:
+                self.win.close()
+                raise ExperimentAborted("Validation phase aborted at response.")
+
+            response = "real" if keys[0] == "1" else "fake"
+            correct = (response == "real" and truth == "data") or \
+                      (response == "fake" and truth == "model")
+
+            results["response"].append(response)
+            results["truth"].append(truth)
+            results["correct"].append(bool(correct))
+
+        return results

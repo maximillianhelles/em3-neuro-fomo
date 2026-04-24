@@ -1,50 +1,100 @@
 import numpy as np
+import json
 import yaml
 import os
 import pandas as pd
 
-def estimate_gbm_params(series, freq_seconds=60):
-    if freq_seconds != 60:
+def load_and_window(data_set_path, freq_seconds=60):
+    """
+    Load the price CSV, resample to `freq_seconds` intervals, and split
+    the price series into complete 1-day windows.
+    Returns an (n_windows, bars_per_day) array of prices.
+    """
+    if freq_seconds < 60:
+        raise ValueError(f"freq_seconds must be >=60, got {freq_seconds}.")
+
+    df = pd.read_csv(data_set_path, parse_dates=["Open time"], index_col="Open time")
+    print(f"Loaded {len(df):,} rows, {df.index.min()} → {df.index.max()}")
+
+    series = df["Close"]
+    if freq_seconds > 60:
         series = series.resample(f"{freq_seconds}s").last().dropna()
 
-    log_rets = np.log(series / series.shift(1)).dropna()
+    expected_per_day = 86400 // freq_seconds
+    windows = [g.values for _, g in series.groupby(series.index.floor("D"))
+               if len(g) == expected_per_day]
 
-    if len(log_rets) < 2:
-        raise ValueError(f"Only {len(log_rets)} valid returns; cannot estimate.")
+    if not windows:
+        raise ValueError(
+            f"No complete 1-day windows found at freq_seconds={freq_seconds} "
+            f"(expected {expected_per_day} bars/day)."
+        )
 
-    mu_est = log_rets.mean()
-    sigma_est = log_rets.std(ddof=1)
+    print(f"Built {len(windows):,} complete 1-day windows of {expected_per_day} bars each.")
+    return np.asarray(windows)
 
-    return mu_est, sigma_est, len(log_rets)
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-yaml_path = os.path.join(base_dir, "../../config/params.yaml")
+def est_gbm_params(price_windows, max_bar_threshold=0.015):
+    """
+    Compute log returns within each 1-day price window, then estimate
+    (mu, sigma) per window. Excludes windows containing any single-bar
+    log return exceeding `max_bar_threshold` (flash-crash filter), then
+    trims to the 1st-99th sigma percentile. Returns paired distributions
+    so joint sampling preserves correlation.
+    """
+    price_windows = np.asarray(price_windows)
+    log_returns = np.log(price_windows[:, 1:] / price_windows[:, :-1])
+    n_windows = len(log_returns)
 
-with open(yaml_path,"r") as f:
-    params = yaml.safe_load(f)
+    window_max_abs = np.abs(log_returns).max(axis=1)
+    keep = window_max_abs <= max_bar_threshold
 
-data_set = params["jdm"]["data_set"]
+    print(f"Flash-crash filter: kept {keep.sum():,} of {n_windows:,} windows "
+          f"({100 * keep.mean():.1f}%) at threshold {max_bar_threshold}")
 
-print(f"Loading data_set at {yaml_path}")
+    log_returns = log_returns[keep]
 
-df = pd.read_csv(
-    os.path.join(base_dir, "../..", data_set),
-    parse_dates=["Open time"],
-    index_col="Open time"
-)
+    window_mus = log_returns.mean(axis=1)
+    window_sigmas = log_returns.std(axis=1, ddof=1)
 
-close_1m = df["Close"]
+    lo, hi = np.percentile(window_sigmas, [1, 99])
+    mask = (window_sigmas >= lo) & (window_sigmas <= hi)
+    window_mus = window_mus[mask]
+    window_sigmas = window_sigmas[mask]
 
-mu, sigma, n = estimate_gbm_params(close_1m, freq_seconds=params["jdm"]["bar_seconds"])
+    return window_mus.tolist(), window_sigmas.tolist()
 
-print(f"Estimated from {n:,} returns at {params["jdm"]["bar_seconds"]}s bars.")
+if __name__ == "__main__":
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    yaml_path = os.path.join(base_dir, "../../config/params.yaml")
+    dist_path = os.path.join(base_dir, "../../config/jdm_distributions.json")
 
-params["jdm"]["mu"] = float(mu)
-params["jdm"]["sigma"] = float(sigma)
+    with open(yaml_path,"r") as f:
+        params = yaml.safe_load(f)
 
-print(f"Writing drift={round(mu,7)} and volatility={round(sigma,5)} to config file.")
+    data_set = params["jdm"]["data_set"]
 
-with open(yaml_path,"w") as f:
-    yaml.dump(params, f)
+    print(f"Loading {data_set} ...")
+    price_windows = load_and_window(
+        os.path.join(base_dir, "../..", data_set),
+        freq_seconds=params["jdm"]["bar_seconds"],
+    )
 
-print("Written to params.yaml successfully")
+    window_mus, window_sigmas = est_gbm_params(price_windows)
+
+    print(f"\nEstimated from {len(window_mus):,} windows.")
+    print(
+        f"  sigma: mean={np.mean(window_sigmas):.4f}, "
+        f"range=[{min(window_sigmas):.4f}, {max(window_sigmas):.4f}]"
+    )
+
+    with open(dist_path, "w") as f:
+        json.dump({"mu": window_mus, "sigma": window_sigmas}, f, indent=1)
+
+    params["jdm"]["distributions_file"] = "config/jdm_distributions.json"
+
+    with open(yaml_path, "w") as f:
+        yaml.dump(params, f)
+
+    print(f"\nDistributions → {dist_path}")
+    print(f"Config updated → {yaml_path}")
