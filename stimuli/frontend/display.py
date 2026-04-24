@@ -222,6 +222,7 @@ class ExpInterface:
         core.wait(2.0)
 
         action_taken = (False, None)
+        action_index = None
         action_value = None
         for i in range(2, len(values)+1):
             if action_taken[0] and action_taken[1] == "BUY":
@@ -252,6 +253,7 @@ class ExpInterface:
                 if key and not action_taken[0]:
                     action_value = values[i-1]
                     position = "CASH"
+                    action_index = i-1
                     action_taken = (True, "SELL")
                     trigger_type.send(TriggerCode.SELL_ACTION)
             else:
@@ -259,12 +261,13 @@ class ExpInterface:
                 if key and not action_taken[0]:
                     action_value = values[i-1]
                     position = "ASSET"
+                    action_index = i-1
                     action_taken = (True, "BUY")
                     trigger_type.send(TriggerCode.BUY_ACTION)
 
             core.wait(1.0) if i == len(values) else core.wait(0.025)
         
-        return action_taken, action_value
+        return action_taken, action_index, action_value
 
     def sam_rating(self):
         prompts = [
