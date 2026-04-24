@@ -91,7 +91,7 @@ def run_block(interface, trigger, subject_id, block_id, trials_per_condition, sa
         rng = np.random.default_rng(get_seed(block_id, trial_num))
         values, jump, jump_point = jdm(init_value=capital, direction=direction, rng=rng)
         trigger.send(TriggerCode.TRIAL_START)
-        action_taken, action_value = interface.chart_phase(values, position, jump, jump_point, trigger)
+        action_taken, action_index, action_value = interface.chart_phase(values, position, jump, jump_point, trigger)
         final_position = ("CASH" if position == "ASSET" else "ASSET") if action_taken[0] else position
 
         # SAM-rating
@@ -112,9 +112,11 @@ def run_block(interface, trigger, subject_id, block_id, trials_per_condition, sa
                     "position": position,
                     "final_position": final_position,
                     "direction": direction,
+                    "jump_index": jump_point,
                     "jump_pct": jump,
                     "chart_values": [round(v, 4) for v in values],
                     "action_taken": action_taken,
+                    "action_index": action_index,
                     "action_value": action_value,
                     "final_value": values[-1],
                     "valence": responses["valence"],
