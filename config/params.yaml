@@ -109,8 +109,8 @@ exp:
   - ZRWM
   - ZYWE
   trials_per_condition_behavioral: 6
-  trials_per_condition_eeg: 20
-  trigger_mode: dummy
+  trials_per_condition_eeg: 18
+  trigger_mode: hardware
 jdm:
   bar_seconds: 300
   data_set: data/financial_data/BTCUSD_1m_2017-2025.csv

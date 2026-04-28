@@ -77,8 +77,7 @@ try:
     subject_id = get_subject_id()
     participant_type, trials_per_condition = get_trials_per_condition()
     
-    trigger_mode = "hardware" if participant_type == "eeg" else "dummy"
-    trigger = get_trigger_sender(mode=trigger_mode)
+    trigger = get_trigger_sender()
 
     exp_interface = ExpInterface(fullscr=fullscr)
     exp_interface.show_instructions()

@@ -46,6 +46,10 @@ def get_trigger_sender(mode=None):
 
     if mode == "hardware":
         serial_port = params["exp"]["serial_port"]
-        return SerialTrigger(serial_port)
+        try:
+            return SerialTrigger(serial_port)
+        except Exception as e:
+            print(f"[TTL] WARNING: could not open serial port {serial_port!r} ({e}). Falling back to DummyTrigger.")
+            return DummyTrigger()
 
     raise ValueError(f"Unknown trigger mode: {mode!r} (expected 'dummy' or 'hardware')")

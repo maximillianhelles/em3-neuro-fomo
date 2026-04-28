@@ -60,8 +60,8 @@ def run_block(interface, trigger, subject_id, block_id, trials_per_condition, sa
         os.makedirs(os.path.dirname(csv_path), exist_ok=True)
 
     fieldnames = ["participant_id", "block_id", "trial_num", "ticker",
-                "position", "final_position", "direction", "jump_pct", "chart_values",
-                "action_taken", "action_value", "final_value", "valence", "arousal", "regret"]
+                "position", "final_position", "direction", "jump_index", "jump_pct", "chart_values",
+                "action_taken", "action_index", "action_value", "final_value", "valence", "arousal", "regret"]
 
     master_plan = [tuple(t) for t in TRIAL_PLANS[block_id]]
     participant_plan = get_participant_plan(master_plan, trials_per_condition)
