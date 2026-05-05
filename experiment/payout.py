@@ -20,7 +20,7 @@ if len(all_data) == 0:
 else:
     combined_df = pd.concat(all_data, ignore_index=True)
     eligible = combined_df[combined_df["block_id"] != "control"]
-    winning_trial = eligible.nsmallest(1, "final_value").iloc[0]
+    winning_trial = eligible.sample(1).iloc[0]
     final_value = winning_trial["final_value"]
 
     print("PAYOUT DRAW")
