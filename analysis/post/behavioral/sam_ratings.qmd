@@ -1,0 +1,170 @@
+---
+title: "Analyses of SAM-ratings"
+author: "Maximillian Helles"
+format: html
+---
+
+```{r setup}
+#| include: false
+source("_setup.R")
+```
+
+## SAM-ratings by Condition - Raw Means
+```{r}
+df_long <- df |>
+  pivot_longer(
+    cols      = c(valence, arousal, regret),
+    names_to  = "sam_dimension",
+    values_to = "rating"
+  )
+
+df_sam_summary <- df_long |>
+  group_by(realized_condition, sam_dimension) |>
+  summarise(
+    mean_rating = mean(rating, na.rm = TRUE),
+    sd_rating   = sd(rating,   na.rm = TRUE),
+    n           = n(),
+    se          = sd_rating / sqrt(n),
+    .groups     = "drop"
+  )
+
+df_sam_summary
+
+df_sam_summary |>
+  ggplot(aes(x = realized_condition, y = mean_rating, fill = realized_condition)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = mean_rating - se,
+                    ymax = mean_rating + se),
+                width = 0.2) +
+  facet_wrap(~ sam_dimension) +
+  scale_fill_manual(values = c("Gain"   = "#4C9F70",
+                                "Relief" = "#8FB996",
+                                "FOMO"   = "#E07A5F",
+                                "Loss"   = "#C44536")) +
+  labs(
+    x        = NULL,
+    y        = "Raw Mean Ratings (±1 SE)",
+  ) +
+  theme(
+    legend.position = "none",
+    panel.grid.major.x = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
+```
+## Individual Responses and Means to SAM
+```{r}
+df_participant <- df_long |>
+  group_by(participant_id, realized_condition, sam_dimension) |>
+  summarise(mean_rating = mean(rating, na.rm = TRUE), .groups = "drop")
+
+df_long |>
+  ggplot(aes(x = realized_condition, y = rating, color = participant_id)) +
+  geom_jitter(width = 0.2, height = 0.2, alpha = 0.5) +
+  facet_wrap(~ sam_dimension) +
+  theme_minimal() +
+  geom_point(data = df_participant,
+           aes(x = realized_condition, y = mean_rating, fill = participant_id),
+           color = "black",         # fixed border color, outside aes()
+           shape = 23,
+           size = 3,
+           stroke = 0.6) +
+  facet_wrap(~ sam_dimension) +
+  theme_minimal() + 
+  scale_y_continuous(limits = c(1, 9), breaks = 1:9) +
+  labs(x = NULL)
+```
+Individual responses generally consistent with expectation / prediction. 
+
+#### Participant 007
+In both regret and valence, participant 007 (color: sky blue) rated Gain ≈ FOMO & Relief ≈ Loss, indicating the participant failed / misunderstood the concept of positions (ASSET / CASH). This data will, however, still be used.
+
+## Fitting a LMM: Emotion ~ Condition
+#### Arousal
+```{r}
+model_arousal <- lmer(arousal ~ realized_condition + (1 | participant_id), data=df)
+cat("---- LMM ----\n")
+summary(model_arousal)
+cat("\n ---- ANOVA ----\n")
+anova(model_arousal, ddf = "Kenward-Roger")
+cat("\n ---- PAIRWISE COMPARISONS ----\n")
+emm_arousal <- emmeans(model_arousal, pairwise ~ realized_condition, adjust = "tukey")
+emm_arousal
+```
+Residuals Diagnostic:
+```{r}
+qqnorm(resid(model_arousal)); qqline(resid(model_arousal))
+ranef(model_arousal)$participant_id
+```
+
+#### Regret
+```{r}
+model_regret <- lmer(regret ~ realized_condition + (1 | participant_id), data=df)
+cat("---- LMM ----\n")
+summary(model_regret)
+cat("\n ---- ANOVA ----\n")
+anova(model_regret, ddf = "Kenward-Roger")
+cat("\n ---- PAIRWISE COMPARISONS ----\n")
+emm_regret <- emmeans(model_regret, pairwise ~ realized_condition, adjust = "tukey")
+emm_regret
+```
+```{r}
+qqnorm(resid(model_regret)); qqline(resid(model_regret))
+ranef(model_regret)$participant_id
+```
+
+
+#### Valence
+```{r}
+model_valence <- lmer(valence ~ realized_condition + (1 | participant_id), data=df)
+cat("---- LMM ----\n")
+summary(model_valence)
+cat("\n ---- ANOVA ----\n")
+anova(model_valence, ddf = "Kenward-Roger")
+cat("\n ---- PAIRWISE COMPARISONS ----\n")
+emm_valence <- emmeans(model_valence, pairwise ~ realized_condition, adjust = "tukey")
+emm_valence
+```
+
+```{r}
+qqnorm(resid(model_regret)); qqline(resid(model_regret))
+ranef(model_regret)$participant_id
+```
+
+```{r}
+model_summary <- bind_rows(
+  mutate(as.data.frame(emm_arousal$emmeans), sam_dimension = "arousal"),
+  mutate(as.data.frame(emm_regret$emmeans),  sam_dimension = "regret"),
+  mutate(as.data.frame(emm_valence$emmeans), sam_dimension = "valence")
+) |>
+  rename(mean_rating = emmean, se = SE)
+
+model_summary |>
+  ggplot(aes(x = realized_condition, y = mean_rating, fill = realized_condition)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = mean_rating - se,
+                    ymax = mean_rating + se),
+                width = 0.2) +
+  facet_wrap(~ sam_dimension) +
+  scale_fill_manual(values = c("Gain"   = "#4C9F70",
+                                "Relief" = "#8FB996",
+                                "FOMO"   = "#E07A5F",
+                                "Loss"   = "#C44536")) +
+  labs(
+    x        = NULL,
+    y        = "Model-estimated Mean Ratings (±1 SE)",
+  ) +
+  theme(
+    legend.position = "none",
+    panel.grid.major.x = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
+```
+## Fitting a LMM: Arousal ~ Invested (at spike)
+```{r}
+model_arousal_invested <- lmer(arousal ~ invested + (1 | participant_id), 
+                                data = df)
+
+summary(model_arousal_invested)
+```
+Arousal tracks investment status (whether the participant held a position when the spike occurred), not the specific counterfactual structure (Gain vs. Loss, FOMO vs. Relief) that drives regret and valence.
+

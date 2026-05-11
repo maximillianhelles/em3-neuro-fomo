@@ -49,6 +49,7 @@ master["action_kind"] = master["action_taken"].apply(
 master["action_before_spike"] = master["action_index"] < master["jump_index"]
 
 # Difference between jump_index and action_index (jump_index as anchor point)
+master["action_index"] = master["action_index"].astype("Int64")
 master["diff_action_jmp"] = master["action_index"] - master["jump_index"]
 
 # Realized Condition
