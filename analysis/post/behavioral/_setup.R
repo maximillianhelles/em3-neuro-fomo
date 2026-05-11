@@ -20,7 +20,4 @@ df <- read_csv("../../../data/behavioral_data/master_classified.csv", show_col_t
     intended_condition = factor(intended_condition,
                                  levels = c("Gain", "Relief", "FOMO", "Loss")),
     block_id           = factor(block_id, levels = c("control", "low", "high")),
-    invested           = factor(if_else(realized_condition %in% c("Gain", "Loss"),
-                                        "invested", "bystander"),
-                                levels = c("bystander", "invested"))
   )

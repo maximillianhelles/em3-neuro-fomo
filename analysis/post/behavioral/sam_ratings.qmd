@@ -161,10 +161,100 @@ model_summary |>
 ```
 ## Fitting a LMM: Arousal ~ Invested (at spike)
 ```{r}
-model_arousal_invested <- lmer(arousal ~ invested + (1 | participant_id), 
+model_arousal_invested <- lmer(arousal ~ pos_at_jump + (1 | participant_id), 
                                 data = df)
 
 summary(model_arousal_invested)
 ```
 Arousal tracks investment status (whether the participant held a position when the spike occurred), not the specific counterfactual structure (Gain vs. Loss, FOMO vs. Relief) that drives regret and valence.
+
+## Jump and SAM-Rating 
+```{r}
+df |>
+  ggplot(aes(x = abs(jump_pct), y = arousal, color = realized_condition)) +
+  geom_jitter(alpha = 0.4, height = 0.2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_color_manual(values = c("Gain"   = "#4C9F70",
+                                 "Relief" = "#8FB996",
+                                 "FOMO"   = "#E07A5F",
+                                 "Loss"   = "#C44536")) +
+  labs(x = "Jump magnitude (|jump_pct|)", 
+       y = "Arousal", 
+       color = "Condition") +
+  theme_minimal()
+
+df |>
+  ggplot(aes(x = abs(jump_pct), y = regret, color = realized_condition)) +
+  geom_jitter(alpha = 0.4, height = 0.2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_color_manual(values = c("Gain"   = "#4C9F70",
+                                 "Relief" = "#8FB996",
+                                 "FOMO"   = "#E07A5F",
+                                 "Loss"   = "#C44536")) +
+  labs(x = "Jump magnitude (|jump_pct|)", 
+       y = "Regret", 
+       color = "Condition") +
+  theme_minimal()
+
+df |>
+  ggplot(aes(x = abs(jump_pct), y = valence, color = realized_condition)) +
+  geom_jitter(alpha = 0.4, height = 0.2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_color_manual(values = c("Gain"   = "#4C9F70",
+                                 "Relief" = "#8FB996",
+                                 "FOMO"   = "#E07A5F",
+                                 "Loss"   = "#C44536")) +
+  labs(x = "Jump magnitude (|jump_pct|)", 
+       y = "Valence", 
+       color = "Condition") +
+  theme_minimal()
+```
+```{r}
+model_arousal_jump <- lmer(arousal ~ abs(jump_pct) * realized_condition + 
+                            (1 | participant_id), data = df)
+anova(model_arousal_jump, ddf = "Kenward-Roger")
+
+model_regret_jump <- lmer(regret ~ abs(jump_pct) * realized_condition + 
+                            (1 | participant_id), data = df)
+anova(model_regret_jump, ddf = "Kenward-Roger")
+
+model_valence_jump <- lmer(valence ~ abs(jump_pct) * realized_condition + 
+                            (1 | participant_id), data = df)
+anova(model_valence_jump, ddf = "Kenward-Roger")
+```
+```{r}
+emtrends(model_regret_jump,  ~ realized_condition, var = "abs(jump_pct)")
+emtrends(model_valence_jump, ~ realized_condition, var = "abs(jump_pct)")
+```
+
+```{r}
+df |>
+  filter(realized_condition %in% c("Relief", "FOMO")) |>
+  pivot_longer(c(regret, valence), names_to = "sam_dimension", values_to = "rating") |>
+  ggplot(aes(x = abs(jump_pct), y = rating, color = realized_condition)) +
+  geom_jitter(alpha = 0.3, height = 0.2) +
+  geom_smooth(method = "lm") +
+  facet_wrap(~ sam_dimension) +
+  scale_color_manual(values = c("Relief" = "#8FB996", "FOMO" = "#E07A5F")) +
+  labs(x = "Jump magnitude (|jump_pct|)", y = "SAM rating", color = "Condition") +
+  theme_minimal()
+```
+An exploratory analysis examined whether jump magnitude (|jump_pct|) modulated SAM ratings beyond the condition effect. For arousal, neither the main effect nor the interaction with condition reached significance (all p > .3). For regret and valence, however, significant interactions emerged (regret: F(3, 773) = 3.17, p = .024; valence: F(3, 772) = 4.20, p = .006). Follow-up tests of per-condition slopes revealed that the magnitude effect was driven exclusively by the bystander conditions: in Relief trials, larger dodged negative jumps were associated with lower regret (slope = -41.4, 95% CI [-72.5, -10.4]) and higher valence (slope = +40.6, [+12.2, +69.1]); in FOMO trials, larger missed positive jumps were associated with lower valence (slope = -25.3, [-48.5, -2.1]). Invested conditions (Gain, Loss) showed no reliable magnitude effects, likely reflecting ceiling/floor effects in their SAM ratings.
+
+
+```{r}
+mean_t <- mean(df$action_index, na.rm = TRUE)
+
+df$action_time <- df$action_index
+
+ggplot(df, aes(x = action_time)) +
+  geom_histogram(bins = 30, fill = "grey80", color = "white") +
+  geom_vline(xintercept = mean_t, linetype = "dashed") +
+  labs(x = "Action time (s)", y = "Counts")
+
+ggplot(df, aes(x = action_time*0.025)) +
+  geom_histogram(bins = 30, fill = "grey80", color = "white") +
+  geom_vline(xintercept = mean_t*0.025, linetype = "dashed") +
+  labs(x = "Action time (s)", y = "Counts")
+```
 
