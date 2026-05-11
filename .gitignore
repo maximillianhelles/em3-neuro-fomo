@@ -209,5 +209,6 @@ __marimo__/
 # Mac Desktop Services
 .DS_Store
 
-#Data
+#Data (size constraints)
 data/financial_data/
+data/eeg/subject_999_eeg_data.bdf
