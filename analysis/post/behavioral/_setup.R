@@ -1,4 +1,4 @@
-pkgs <- c("tidyverse", "lme4", "lmerTest", "pbkrtest", "emmeans")
+pkgs <- c("tidyverse", "lme4", "lmerTest", "pbkrtest", "emmeans", "gt", "broom.mixed")
 
 for (pkg in pkgs) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
