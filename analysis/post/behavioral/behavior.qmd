@@ -1,0 +1,32 @@
+---
+title: "Analyses of SAM-ratings"
+author: "Maximillian Helles"
+format: html
+---
+```{r setup}
+#| include: false
+source("_setup.R")
+```
+
+
+```{r}
+mean_t <- mean(df$action_index, na.rm = TRUE)
+mean_jump_index <- mean(df$jump_index)
+
+ggplot(df, aes(x = action_index)) +
+  geom_bar(fill = "darkblue") +
+  geom_vline(xintercept = mean_t, linetype = "dashed") + # Participant mean
+  geom_vline(xintercept = 288 / 2, color = "red") + # Half of trial
+  geom_vline(xintercept = mean_jump_index, color = "green") +
+  scale_y_continuous(limits = c(0, 10), breaks = 0:10) +
+  labs(x = "Action Index", y = "Counts")
+
+ggplot(df, aes(x = action_index*0.025)) +
+  geom_bar(fill = "darkblue") +
+  geom_vline(xintercept = mean_t*0.025, linetype = "dashed") +
+  geom_vline(xintercept = 288*0.025 / 2, color = "red") +
+  geom_vline(xintercept = mean_jump_index * 0.025, color = "green") +
+  scale_x_continuous(limits = c(0, 288*0.025), breaks = 0:8) +
+  scale_y_continuous(limits = c(0, 10), breaks = 0:10) +
+  labs(x = "Action time (s)", y = "Counts")
+```

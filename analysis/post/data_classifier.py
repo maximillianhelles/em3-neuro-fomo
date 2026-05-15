@@ -16,7 +16,7 @@ blocks = params["exp"]["blocks"]
 
 files = sorted(f for f in data_dir.rglob("*_results_block.csv") if f.parent.name != "excluded")
 
-print(f"Found {len(files)} files")
+print(f"Found {len(files)} files...")
 
 dfs = [pd.read_csv(file, dtype={"participant_id": str}) for file in files]
 master = pd.concat(dfs, ignore_index=True)
@@ -25,6 +25,8 @@ master["block_id"] = pd.Categorical(master["block_id"], categories=["control", "
 master = master.sort_values(["block_id", "participant_id", "trial_num"]).reset_index(drop=True)
 
 #print(master.head)
+
+print("Inferring & adding columns...")
 
 # --- INFER COLUMNS & ADD TO DATAFRAME ---
 # Intended Condition ('Gain', 'Loss', 'FOMO', 'Relief')
@@ -49,6 +51,7 @@ master["action_kind"] = master["action_taken"].apply(
 master["action_before_spike"] = master["action_index"] < master["jump_index"]
 
 # Difference between jump_index and action_index (jump_index as anchor point)
+master["action_index"] = master["action_index"].astype("Int64")
 master["diff_action_jmp"] = master["action_index"] - master["jump_index"]
 
 # Realized Condition
@@ -63,7 +66,15 @@ master["realized_condition"] = np.where(
 #print(master["realized_condition"].value_counts(dropna=False))
 #print(pd.crosstab(master["intended_condition"], master["realized_condition"]))
 
+# Position at jump
+master["pos_at_jump"] = np.where(
+    master["realized_condition"].isin(["Gain", "Loss"]), 
+    "ASSET", 
+    "CASH"
+)
+
 # --- OUTPUT ---
 
 output_path = base_dir / "../../data/behavioral_data/master_classified.csv"
 master.to_csv(output_path, index=False)
+print(f"Succesfully outputted master_classified.csv at \n {output_path}")

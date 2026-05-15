@@ -1,0 +1,426 @@
+---
+title: "Analyses of SAM-ratings"
+author: "Maximillian Helles"
+format: html
+---
+
+```{r setup}
+#| include: false
+source("_setup.R")
+```
+
+## SAM-ratings by Condition - Raw Means
+```{r}
+# Re-size dataframe by SAM Dimension
+df_long <- df |>
+  pivot_longer(
+    cols = c(valence, arousal, regret),
+    names_to = "sam_dimension",
+    values_to = "rating"
+  )
+
+# Extract SAM-ratings per condition and get mean, sd, n, se. 
+df_sam_summary <- df_long |>
+  group_by(realized_condition, sam_dimension) |>
+  summarise(
+    mean_rating = mean(rating),
+    sd_rating = sd(rating),
+    n = n(),
+    se = sd_rating / sqrt(n),
+    .groups = "drop"
+  )
+
+# Display summaries in tibble
+df_sam_summary
+
+# Plot raw mean ratings
+df_sam_summary |>
+  ggplot(aes(x = realized_condition, y = mean_rating, fill = realized_condition)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = mean_rating - se, ymax = mean_rating + se), width = 0.2) +
+  facet_wrap(~ sam_dimension) +
+  scale_fill_manual(values = c("Gain"= "#4C9F70","Relief" = "#8FB996", "FOMO" = "#E07A5F","Loss" = "#C44536")) +
+  labs(x = NULL, y = "Raw Mean Ratings (±1 SE)") +
+  theme(
+    legend.position = "none",
+    panel.grid.major.x = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
+```
+## Individual Responses and Means to SAM
+```{r}
+# Get individual raw means for each sam-rating per condition
+df_participant <- df_long |>
+  group_by(participant_id, realized_condition, sam_dimension) |>
+  summarise(mean_rating = mean(rating), .groups = "drop")
+
+# Plot individual raw means and responses
+df_long |>
+  ggplot(aes(x = realized_condition, y = rating, color = participant_id)) +
+  geom_jitter(width = 0.2, height = 0.2, alpha = 0.5) +
+  facet_wrap(~ sam_dimension) +
+  theme_minimal() +
+  geom_point(data = df_participant,
+           aes(x = realized_condition, y = mean_rating, fill = participant_id),
+           color = "black",         # fixed border color, outside aes()
+           shape = 23,
+           size = 3,
+           stroke = 0.6) +
+  facet_wrap(~ sam_dimension) +
+  theme_minimal() + 
+  scale_y_continuous(limits = c(1, 9), breaks = 1:9) +
+  labs(x = NULL)
+```
+Individual responses are generally consistent with expectations / predictions. Two participants specifically reported ratings contrary to expectations:
+
+- **Participant 007:** In both regret - and valence rating, 007 rated Gain ≈ FOMO & Relief ≈ Loss, indicating the participant failed / misunderstood the concept of positions (ASSET / CASH) and how that would affect their payout. 
+- **Participant 005:** In Loss and FOMO, 005 ratings are elevated compared to other participants (except 007), suggesting a general positivity. They are, however, still monotonically decreasing. 
+
+In arousal, two participants also reported lower ratings than the majority, but seems like it's just their own individual baselines.
+
+## LMM Random Effects Comparison
+Participants differ in baseline emotional response (captured by a random intercept) and may also differ in how strongly each condition shifts their ratings (captured by random slopes). Omitting a real source of between-participant variation deflates standard errors on the fixed effects and inflates Type-I error; including spurious variance components wastes degrees of freedom and can fail to converge.
+
+Two specifications are compared per SAM dimension: a random intercept only, and uncorrelated random slopes for each non-reference condition. A fully correlated random-slope model was also considered but is not reported here: with n = 10 participants, the 6 covariance parameters were not identifiable and the model produced singular fits under all optimizers.
+
+Even between the two retained specifications, the small participant pool matters. Each random-slope variance must be estimated from 10 per-participant deviations and may absorb noise rather than real structure, which is why BIC (penalizing complexity more heavily than AIC) sometimes favors the simpler intercept-only model. Selection proceeds per dimension based on the table below.
+
+```{r}
+df <- df |>
+  mutate(
+    cond_Relief = as.numeric(realized_condition == "Relief"),
+    cond_FOMO   = as.numeric(realized_condition == "FOMO"),
+    cond_Loss   = as.numeric(realized_condition == "Loss")
+  )
+
+# Fit three candidate random-effects structures for a given SAM dimension
+# and return their fit statistics in a tidy row.
+compare_models <- function(dv, data = df) {
+  m_intercept <- lmer(
+    as.formula(paste(dv, "~ realized_condition + (1 | participant_id)")),
+    data = data
+  )
+  m_slopes_uncorr <- lmer(
+    as.formula(paste(dv, "~ realized_condition +",
+                     "(1 + cond_Relief + cond_FOMO + cond_Loss || participant_id)")),
+    data = data
+  )
+
+  models <- list(
+    "Random intercept"             = m_intercept,
+    "Random slopes" = m_slopes_uncorr
+  )
+
+  tibble(
+    Dimension = dv,
+    Model     = names(models),
+    Df        = vapply(models, \(m) attr(logLik(m), "df"), numeric(1)),
+    logLik    = vapply(models, \(m) as.numeric(logLik(m)), numeric(1)),
+    AIC       = vapply(models, AIC, numeric(1)),
+    BIC       = vapply(models, BIC, numeric(1))
+  )
+}
+
+model_comparison <- bind_rows(
+  compare_models("arousal"),
+  compare_models("regret"),
+  compare_models("valence")
+)
+
+model_comparison
+```
+The random slopes model wins unambigously across all SAM dimensions, hence why the following will use a random slope LMM for modelling SAM-ratings.
+
+## Fitting a LMM with random slope and intercept: Emotion ~ Condition
+The Linear Mixed-Effects Model is determined by
+
+emotion = β₀ + βs · conditions + u₀ + us · conditions + ε
+
+where:
+- β₀: fixed intercept, population-level mean of the reference condition (Gain).
+- βs: fixed coefficients (β_Relief, β_FOMO, β_Loss), each the population-level shift from Gain.
+- conditions: dummy-coded indicators (0/1) for each non-reference condition.
+- u₀: random intercept, the participant's deviation from β₀.
+- us: random slopes (u_Relief, u_FOMO, u_Loss), the participant's deviation from each fixed slope.
+- ε: trial-level residual, drawn from N(0, σ²_ε) (noise).
+
+The participant-level random effects (u₀, us) are jointly drawn from a multivariate normal N(0, Σ), where Σ is the random-effects covariance matrix. For this LMM, the *uncorrelated* version, in which Σ is diagonal and participants vary independently in baseline and in each condition effect will be used since initial testing revealed that the correlated version failed.
+
+Since there is no universally correct way to determine the denominator degrees of freedom (ddf) for a t or F test in a general linear mixed model, p-values require approximation. To determine if the realized condition explains any variance at all, an ANOVA using the Kenward-Roger approximation is applied to the model. If so, 6 pairwise comparisons with multiple-comparison adjustment (tukey; studentized range distribution) will be performed.
+
+#### Arousal
+```{r}
+model_arousal_condition <- lmer(
+  arousal ~ realized_condition +
+    (1 + cond_Relief + cond_FOMO + cond_Loss || participant_id),
+  data = df
+)
+cat("---- ANOVA ----\n")
+anova(model_arousal_condition, ddf = "Kenward-Roger")
+cat("\n ---- PAIRWISE COMPARISONS ----\n")
+emm_arousal <- emmeans(model_arousal_condition, pairwise ~ realized_condition, adjust = "tukey")
+emm_arousal
+```
+All insignificant. LMM assumes the residuals and random effects are approximately Gaussian (follow a normal distribution), so to verify:
+
+```{r}
+qqnorm(resid(model_arousal_condition)); qqline(resid(model_arousal_condition))
+ranef(model_arousal_condition)$participant_id 
+```
+QQ-plot looks fine, deviating slightly at the tails but nothing concerning. 
+As the plot of individuals responses also suggested, participants 008 and 116 are ≈-3 points below population intercept (β₀). 008 has a low baseline, but 116 does vary more.
+
+#### Regret
+```{r}
+model_regret_condition <- lmer(
+  regret ~ realized_condition +
+    (1 + cond_Relief + cond_FOMO + cond_Loss || participant_id),
+  data = df
+)
+cat("---- ANOVA ----\n")
+anova(model_regret_condition, ddf = "Kenward-Roger")
+cat("\n ---- PAIRWISE COMPARISONS ----\n")
+emm_regret <- emmeans(model_regret_condition, pairwise ~ realized_condition, adjust = "tukey")
+emm_regret
+```
+Most adjusted p-values are significant except two: Gain - Relief (p = 0.13) and FOMO - Loss (p=0.077). Most likely due to low statistical power (n = 10). Checking effect sizes via cohen's d:
+```{r}
+eff_size(emm_regret, sigma = sigma(model_regret_condition), edf = df.residual(model_regret_condition)) |>
+  suppressMessages()
+```
+Moderate-to-huge (ranging from -2.87 to -0.60) effects sizes across the board consistent with the plot of raw group means.
+
+```{r}
+qqnorm(resid(model_regret_condition)); qqline(resid(model_regret_condition))
+ranef(model_regret_condition)$participant_id
+```
+QQ-plot looks OK again, though with slightly more deviating tails. Subject 999 differs most from fixed intercept at 0.89 but range is far narrower than arousal at [-0.54;0.89]. As seen in the plot of individual ratings, 999 nearly rates FOMO the same as Loss.
+
+#### Valence
+```{r}
+model_valence_condition <- lmer(
+  valence ~ realized_condition +
+    (1 + cond_Relief + cond_FOMO + cond_Loss || participant_id),
+  data = df
+)
+cat("---- ANOVA ----\n")
+anova(model_valence_condition, ddf = "Kenward-Roger")
+cat("\n---- PAIRWISE COMPARISONS ----\n")
+emm_valence <- emmeans(model_valence_condition, pairwise ~ realized_condition, adjust = "tukey")
+emm_valence
+```
+Again, lack of statistical power causes some contrasts to be insignificant. Checking effect sizes via cohen's d:
+```{r}
+eff_size(emm_valence, sigma = sigma(model_valence_condition), edf = df.residual(model_valence_condition)) |>
+  suppressMessages()
+```
+Large-to-huge effect sizes on valence ratings across the board. Consistent with the raw means plot. Furtermore implying need for increased statistical power.
+
+```{r}
+qqnorm(resid(model_valence_condition)); qqline(resid(model_valence_condition))
+ranef(model_valence_condition)$participant_id
+```
+As in Arousal and Regret, the QQ-plot show that residuals seem close to gaussian.
+
+### Model Means Plot
+
+```{r}
+model_summary <- bind_rows(
+  mutate(as.data.frame(emm_arousal$emmeans), sam_dimension = "arousal"),
+  mutate(as.data.frame(emm_regret$emmeans),  sam_dimension = "regret"),
+  mutate(as.data.frame(emm_valence$emmeans), sam_dimension = "valence")
+) |>
+  rename(mean_rating = emmean, se = SE)
+
+model_summary |>
+  ggplot(aes(x = realized_condition, y = mean_rating, fill = realized_condition)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = mean_rating - se,
+                    ymax = mean_rating + se),
+                width = 0.2) +
+  facet_wrap(~ sam_dimension) +
+  scale_fill_manual(values = c("Gain"   = "#4C9F70",
+                                "Relief" = "#8FB996",
+                                "FOMO"   = "#E07A5F",
+                                "Loss"   = "#C44536")) +
+  labs(
+    x        = NULL,
+    y        = "Model-estimated Mean Ratings (±1 SE)",
+  ) +
+  theme(
+    legend.position = "none",
+    panel.grid.major.x = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
+```
+## Fitting a LMM: Arousal ~ Invested (at spike)
+```{r}
+model_arousal_invested <- lmer(arousal ~ pos_at_jump + (1 | participant_id), 
+                                data = df)
+
+summary(model_arousal_invested)
+```
+Arousal tracks investment status (whether the participant held a position when the spike occurred), not the specific counterfactual structure (Gain vs. Loss, FOMO vs. Relief) that drives regret and valence.
+
+## Jump and SAM-Rating 
+```{r}
+df |>
+  ggplot(aes(x = abs(jump_pct), y = arousal, color = realized_condition)) +
+  geom_jitter(alpha = 0.4, height = 0.2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_color_manual(values = c("Gain"   = "#4C9F70",
+                                 "Relief" = "#8FB996",
+                                 "FOMO"   = "#E07A5F",
+                                 "Loss"   = "#C44536")) +
+  labs(x = "Jump magnitude (|jump_pct|)", 
+       y = "Arousal", 
+       color = "Condition") +
+  theme_minimal()
+
+df |>
+  ggplot(aes(x = abs(jump_pct), y = regret, color = realized_condition)) +
+  geom_jitter(alpha = 0.4, height = 0.2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_color_manual(values = c("Gain"   = "#4C9F70",
+                                 "Relief" = "#8FB996",
+                                 "FOMO"   = "#E07A5F",
+                                 "Loss"   = "#C44536")) +
+  labs(x = "Jump magnitude (|jump_pct|)", 
+       y = "Regret", 
+       color = "Condition") +
+  theme_minimal()
+
+df |>
+  ggplot(aes(x = abs(jump_pct), y = valence, color = realized_condition)) +
+  geom_jitter(alpha = 0.4, height = 0.2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_color_manual(values = c("Gain"   = "#4C9F70",
+                                 "Relief" = "#8FB996",
+                                 "FOMO"   = "#E07A5F",
+                                 "Loss"   = "#C44536")) +
+  labs(x = "Jump magnitude (|jump_pct|)", 
+       y = "Valence", 
+       color = "Condition") +
+  theme_minimal()
+```
+```{r}
+model_arousal_jump <- lmer(arousal ~ abs(jump_pct) * realized_condition + 
+                            (1 | participant_id), data = df)
+anova(model_arousal_jump, ddf = "Kenward-Roger")
+
+model_regret_jump <- lmer(regret ~ abs(jump_pct) * realized_condition + 
+                            (1 | participant_id), data = df)
+anova(model_regret_jump, ddf = "Kenward-Roger")
+
+model_valence_jump <- lmer(valence ~ abs(jump_pct) * realized_condition + 
+                            (1 | participant_id), data = df)
+anova(model_valence_jump, ddf = "Kenward-Roger")
+```
+```{r}
+emtrends(model_regret_jump,  ~ realized_condition, var = "abs(jump_pct)")
+emtrends(model_valence_jump, ~ realized_condition, var = "abs(jump_pct)")
+```
+
+```{r}
+df |>
+  filter(realized_condition %in% c("Relief", "FOMO")) |>
+  pivot_longer(c(regret, valence), names_to = "sam_dimension", values_to = "rating") |>
+  ggplot(aes(x = abs(jump_pct), y = rating, color = realized_condition)) +
+  geom_jitter(alpha = 0.3, height = 0.2) +
+  geom_smooth(method = "lm") +
+  facet_wrap(~ sam_dimension) +
+  scale_color_manual(values = c("Relief" = "#8FB996", "FOMO" = "#E07A5F")) +
+  labs(x = "Jump magnitude (|jump_pct|)", y = "SAM rating", color = "Condition") +
+  theme_minimal()
+```
+An exploratory analysis examined whether jump magnitude (|jump_pct|) modulated SAM ratings beyond the condition effect. For arousal, neither the main effect nor the interaction with condition reached significance (all p > .3). For regret and valence, however, significant interactions emerged (regret: F(3, 773) = 3.17, p = .024; valence: F(3, 772) = 4.20, p = .006). Follow-up tests of per-condition slopes revealed that the magnitude effect was driven exclusively by the bystander conditions: in Relief trials, larger dodged negative jumps were associated with lower regret (slope = -41.4, 95% CI [-72.5, -10.4]) and higher valence (slope = +40.6, [+12.2, +69.1]); in FOMO trials, larger missed positive jumps were associated with lower valence (slope = -25.3, [-48.5, -2.1]). Invested conditions (Gain, Loss) showed no reliable magnitude effects, likely reflecting ceiling/floor effects in their SAM ratings.
+
+## Capital & SAM-rating
+```{r}
+df |>
+  pivot_longer(c(valence, arousal, regret), 
+               names_to = "sam_dimension", values_to = "rating") |>
+  group_by(block_id, realized_condition, sam_dimension) |>
+  summarise(mean_rating = mean(rating, na.rm = TRUE),
+            se = sd(rating, na.rm = TRUE) / sqrt(n()),
+            .groups = "drop") |>
+  ggplot(aes(x = realized_condition, y = mean_rating, fill = block_id)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  geom_errorbar(aes(ymin = mean_rating - se, ymax = mean_rating + se),
+                position = position_dodge(width = 0.8), width = 0.2) +
+  facet_wrap(~ sam_dimension) +
+  labs(x = NULL, y = "Mean rating (±1 SE)", fill = "Block") +
+  theme_minimal()
+```
+```{r}
+model_arousal_block <- lmer(arousal ~ realized_condition * block_id + 
+                              (1 | participant_id), data = df)
+anova(model_arousal_block, ddf = "Kenward-Roger")
+emmeans(model_arousal_block, ~ block_id)
+
+
+model_regret_block <- lmer(regret ~ realized_condition * block_id + 
+                              (1 | participant_id), data = df)
+anova(model_regret_block, ddf = "Kenward-Roger")
+
+model_valence_block <- lmer(valence ~ realized_condition * block_id + 
+                              (1 | participant_id), data = df)
+anova(model_valence_block, ddf = "Kenward-Roger")
+emmeans(model_valence_block, ~ realized_condition | block_id)
+```
+For valence, a significant condition-by-block interaction emerged, F(6, 767) = 2.77, p = .011, but the pattern was small and non-monotonic, with no clear evidence of linear amplification by capital. The condition effect remained the overwhelming driver of valence ratings in all blocks.
+
+## Action proximity to jump vs. SAM-ratings
+```{r}
+df |>
+  summarise(
+    total      = n(),
+    acted      = sum(!is.na(diff_action_jmp)),
+    not_acted  = sum(is.na(diff_action_jmp))
+  )
+
+df |>
+  filter(!is.na(diff_action_jmp)) |>
+  mutate(abs_diff = abs(diff_action_jmp)) |>
+  pivot_longer(c(valence, arousal, regret), 
+               names_to = "sam_dimension", values_to = "rating") |>
+  ggplot(aes(x = abs_diff, y = rating, color = realized_condition)) +
+  geom_jitter(alpha = 0.3, height = 0.2) +
+  geom_smooth(method = "lm") +
+  facet_wrap(~ sam_dimension) +
+  scale_color_manual(values = c("Gain"   = "#4C9F70",
+                                 "Relief" = "#8FB996",
+                                 "FOMO"   = "#E07A5F",
+                                 "Loss"   = "#C44536")) +
+  labs(x = "Action proximity to spike (|trials|)",
+       y = "SAM rating",
+       color = "Condition") +
+  theme_minimal()
+```
+
+
+```{r}
+df_acted <- df |>
+  filter(!is.na(diff_action_jmp)) |>
+  mutate(
+    abs_diff = abs(diff_action_jmp),
+    action_timing = if_else(diff_action_jmp < 0, "before_spike", "after_spike"),
+    action_timing = factor(action_timing, levels = c("after_spike", "before_spike"))
+  )
+
+model_arousal_proximity <- lmer(arousal ~ abs_diff * realized_condition + 
+                                 (1 | participant_id), data = df_acted)
+anova(model_arousal_proximity, ddf = "Kenward-Roger")
+
+model_regret_proximity <- lmer(regret ~ abs_diff * realized_condition + 
+                                 (1 | participant_id), 
+                                 data = df_acted)
+anova(model_regret_proximity, ddf = "Kenward-Roger")
+
+emtrends(model_regret_proximity, ~ realized_condition, var = "abs_diff")
+
+model_valence_proximity <- lmer(valence ~ abs_diff * realized_condition + 
+                                 (1 | participant_id), data = df_acted)
+anova(model_valence_proximity, ddf = "Kenward-Roger")
+```
+
