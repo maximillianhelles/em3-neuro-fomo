@@ -105,12 +105,16 @@ compare_models <- function(dv, data = df) {
                      "(1 + cond_Relief + cond_FOMO + cond_Loss || participant_id)")),
     data = data
   )
-
-  models <- list(
-    "Random intercept"             = m_intercept,
-    "Random slopes" = m_slopes_uncorr
+  m_slopes_corr <- lmer(
+    as.formula(paste(dv, "~ realized_condition +",
+                     "(1 + cond_Relief + cond_FOMO + cond_Loss | participant_id)")),
+    data = data
   )
-
+  models <- list(
+    "Random intercept"       = m_intercept,
+    "Random slopes (uncorr)" = m_slopes_uncorr,
+    "Random slopes (corr)"   = m_slopes_corr
+  )
   tibble(
     Dimension = dv,
     Model     = names(models),
@@ -126,7 +130,6 @@ model_comparison <- bind_rows(
   compare_models("regret"),
   compare_models("valence")
 )
-
 model_comparison
 ```
 The random slopes model wins unambigously across all SAM dimensions, hence why the following will use a random slope LMM for modelling SAM-ratings.
@@ -243,6 +246,7 @@ model_summary |>
                                 "Relief" = "#8FB996",
                                 "FOMO"   = "#E07A5F",
                                 "Loss"   = "#C44536")) +
+  coord_cartesian(ylim = c(1, 9)) +
   labs(
     x        = NULL,
     y        = "Model-estimated Mean Ratings (±1 SE)",
@@ -253,12 +257,22 @@ model_summary |>
     strip.text = element_text(face = "bold")
   )
 ```
+
+
 ## Fitting a LMM: Arousal ~ Invested (at spike)
 ```{r}
 model_arousal_invested <- lmer(arousal ~ pos_at_jump + (1 | participant_id), 
                                 data = df)
 
-summary(model_arousal_invested)
+anova(model_arousal_invested, ddf = "Kenward-Roger")
+
+emm_invested <- emmeans(model_arousal_invested, ~ pos_at_jump)
+
+eff_size(
+  emm_invested,
+  sigma = sigma(model_arousal_invested),
+  edf   = df.residual(model_arousal_invested)
+)
 ```
 Arousal tracks investment status (whether the participant held a position when the spike occurred), not the specific counterfactual structure (Gain vs. Loss, FOMO vs. Relief) that drives regret and valence.
 
