@@ -105,12 +105,16 @@ compare_models <- function(dv, data = df) {
                      "(1 + cond_Relief + cond_FOMO + cond_Loss || participant_id)")),
     data = data
   )
-
-  models <- list(
-    "Random intercept"             = m_intercept,
-    "Random slopes" = m_slopes_uncorr
+  m_slopes_corr <- lmer(
+    as.formula(paste(dv, "~ realized_condition +",
+                     "(1 + cond_Relief + cond_FOMO + cond_Loss | participant_id)")),
+    data = data
   )
-
+  models <- list(
+    "Random intercept"       = m_intercept,
+    "Random slopes (uncorr)" = m_slopes_uncorr,
+    "Random slopes (corr)"   = m_slopes_corr
+  )
   tibble(
     Dimension = dv,
     Model     = names(models),
@@ -126,7 +130,6 @@ model_comparison <- bind_rows(
   compare_models("regret"),
   compare_models("valence")
 )
-
 model_comparison
 ```
 The random slopes model wins unambigously across all SAM dimensions, hence why the following will use a random slope LMM for modelling SAM-ratings.
@@ -243,6 +246,7 @@ model_summary |>
                                 "Relief" = "#8FB996",
                                 "FOMO"   = "#E07A5F",
                                 "Loss"   = "#C44536")) +
+  coord_cartesian(ylim = c(1, 9)) +
   labs(
     x        = NULL,
     y        = "Model-estimated Mean Ratings (±1 SE)",
@@ -253,12 +257,22 @@ model_summary |>
     strip.text = element_text(face = "bold")
   )
 ```
+
+
 ## Fitting a LMM: Arousal ~ Invested (at spike)
 ```{r}
-model_arousal_invested <- lmer(arousal ~ pos_at_jump + (1 | participant_id), 
-                                data = df)
+model_arousal_invested <- lmer(arousal ~ pos_at_jump + (1 + pos_at_jump | participant_id), 
+                               data = df)
 
-summary(model_arousal_invested)
+anova(model_arousal_invested, ddf = "Kenward-Roger")
+
+emm_invested <- emmeans(model_arousal_invested, ~ pos_at_jump)
+
+eff_size(
+  emm_invested,
+  sigma = sigma(model_arousal_invested),
+  edf   = df.residual(model_arousal_invested)
+)
 ```
 Arousal tracks investment status (whether the participant held a position when the spike occurred), not the specific counterfactual structure (Gain vs. Loss, FOMO vs. Relief) that drives regret and valence.
 
@@ -369,6 +383,41 @@ anova(model_valence_block, ddf = "Kenward-Roger")
 emmeans(model_valence_block, ~ realized_condition | block_id)
 ```
 For valence, a significant condition-by-block interaction emerged, F(6, 767) = 2.77, p = .011, but the pattern was small and non-monotonic, with no clear evidence of linear amplification by capital. The condition effect remained the overwhelming driver of valence ratings in all blocks.
+
+```{r}
+# 1. Calculate EMMs for the interaction between condition and block
+emm_arousal_block <- emmeans(model_arousal_block, ~ realized_condition * block_id)
+emm_regret_block  <- emmeans(model_regret_block,  ~ realized_condition * block_id)
+emm_valence_block <- emmeans(model_valence_block, ~ realized_condition * block_id)
+
+# 2. Combine into a single dataframe for facetted plotting
+df_emm_block <- bind_rows(
+  mutate(as.data.frame(emm_arousal_block), sam_dimension = "arousal"),
+  mutate(as.data.frame(emm_regret_block),  sam_dimension = "regret"),
+  mutate(as.data.frame(emm_valence_block), sam_dimension = "valence")
+) |>
+  rename(mean_rating = emmean, se = SE)
+
+# 3. Plot the Model-estimated Means
+df_emm_block |>
+  ggplot(aes(x = realized_condition, y = mean_rating, fill = block_id)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  geom_errorbar(aes(ymin = mean_rating - se, ymax = mean_rating + se),
+                position = position_dodge(width = 0.8), width = 0.2) +
+  facet_wrap(~ sam_dimension) +
+  coord_cartesian(ylim = c(1, 9)) + # Constraining to the 1-9 SAM scale
+  labs(
+    x    = NULL,
+    y    = "Model-estimated Mean Ratings (±1 SE)",
+    fill = "Block"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
+```
+
 
 ## Action proximity to jump vs. SAM-ratings
 ```{r}
