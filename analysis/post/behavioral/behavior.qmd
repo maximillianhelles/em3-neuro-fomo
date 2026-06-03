@@ -3,11 +3,69 @@ title: "Analyses of SAM-ratings"
 author: "Maximillian Helles"
 format: html
 ---
+
 ```{r setup}
 #| include: false
 source("_setup.R")
 ```
 
+```{r}
+# ---------------------------------------------------------
+# PREPARE DATA: EXCLUDE CONTROL BLOCK
+# ---------------------------------------------------------
+# Create a new dataset that only includes the real-stakes trials (low and high)
+df_main_experiment <- df %>%
+  filter(block_id != "control")
+
+cat("\n(Dropped 'control' block. Remaining blocks:", paste(unique(df_main_experiment$block_id), collapse = ", "), ")\n")
+
+# ---------------------------------------------------------
+# ANALYSIS 1: RISK-SEEKING BEHAVIOR 
+# (Directly tests H6: The House Money Effect vs. Break-Even)
+# ---------------------------------------------------------
+
+# 1. Fit the Mixed-Effects Model for Risk-Seeking
+model_risk_seeking <- glmer(
+  is_risk_seeking ~ prev_condition + position + (1 | participant_id), 
+  data = df_main_experiment, # <--- Using the filtered data here
+  family = binomial,
+  control = glmerControl(optimizer = "bobyqa") 
+)
+
+# 2. Check Overall Significance
+cat("\n--- OVERALL ANOVA: RISK-SEEKING (No Control) ---\n")
+Anova(model_risk_seeking, type = "II")
+
+# 3. Check Specific Contrasts (The Hypothesis Test)
+cat("\n--- PAIRWISE COMPARISONS: RISK-SEEKING (No Control) ---\n")
+post_hoc_seeking <- emmeans(model_risk_seeking, pairwise ~ prev_condition, type = "response")
+summary(post_hoc_seeking)
+
+```
+
+```{r}
+# ---------------------------------------------------------
+# ANALYSIS 2: RISK-AVERSE BEHAVIOR 
+# (Flight-to-safety)
+# ---------------------------------------------------------
+
+# 1. Fit the Mixed-Effects Model for Risk Aversion
+model_risk_aversion <- glmer(
+  is_risk_averse ~ prev_condition + position + (1 | participant_id), 
+  data = df_main_experiment, # <--- Using the filtered data here
+  family = binomial,
+  control = glmerControl(optimizer = "bobyqa") 
+)
+
+# 2. Check Overall Significance
+cat("\n--- OVERALL ANOVA: RISK AVERSION (No Control) ---\n")
+Anova(model_risk_aversion, type = "II")
+
+# 3. Check Specific Contrasts
+cat("\n--- PAIRWISE COMPARISONS: RISK AVERSION (No Control) ---\n")
+post_hoc_aversion <- emmeans(model_risk_aversion, pairwise ~ prev_condition, type = "response")
+summary(post_hoc_aversion)
+```
 
 ```{r}
 mean_t <- mean(df$action_index, na.rm = TRUE)
@@ -29,4 +87,5 @@ ggplot(df, aes(x = action_index*0.025)) +
   scale_x_continuous(limits = c(0, 288*0.025), breaks = 0:8) +
   scale_y_continuous(limits = c(0, 10), breaks = 0:10) +
   labs(x = "Action time (s)", y = "Counts")
+
 ```
