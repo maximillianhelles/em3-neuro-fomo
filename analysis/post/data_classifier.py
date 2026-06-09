@@ -24,7 +24,7 @@ master = pd.concat(dfs, ignore_index=True)
 master["block_id"] = pd.Categorical(master["block_id"], categories=["control", "low", "high"], ordered=True)
 master = master.sort_values(["block_id", "participant_id", "trial_num"]).reset_index(drop=True)
 
-#print(master.head)
+print(master.head)
 
 print("Inferring & adding columns...")
 
@@ -40,7 +40,7 @@ choices = ["Gain", "Loss", "FOMO", "Relief"]
 
 master["intended_condition"] = np.select(conditions, choices, default=None)
 
-#print(master["intended_condition"].value_counts())
+print(master["intended_condition"].value_counts())
 
 # Action Kind ('BUY', 'SELL', 'None')
 master["action_kind"] = master["action_taken"].apply(
@@ -63,8 +63,8 @@ master["realized_condition"] = np.where(
     master["intended_condition"]
 )
 
-#print(master["realized_condition"].value_counts(dropna=False))
-#print(pd.crosstab(master["intended_condition"], master["realized_condition"]))
+print(master["realized_condition"].value_counts(dropna=False))
+print(pd.crosstab(master["intended_condition"], master["realized_condition"]))
 
 # Position at jump
 master["pos_at_jump"] = np.where(
